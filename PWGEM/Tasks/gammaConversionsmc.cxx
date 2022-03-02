@@ -148,7 +148,8 @@ struct GammaConversionsmc {
 
   // Reconstructed info of MC validated V0s histos fV0ReconstructedInfoMCValidatedHistos
   std::vector<MyHistogramSpec> fV0ReconstructedInfoMCValidatedHistoDefinitions{
-    {"hValidatedPtRec", {HistType::kTH1F, {{800, -0.0f, 25.f}}}},
+    {"hValidatedPtRec", {HistType::kTH1F, {{800, 0.0f, 25.f}}}},
+    {"hValidatedRRec", {HistType::kTH1F, {{800, 0.0f, 250.f}}}},
   };
 
   // MC info only histos
@@ -191,85 +192,92 @@ struct GammaConversionsmc {
   void init(InitContext const&)
   {
     for (auto bac : std::vector<std::string>{"beforeCuts/", "afterCuts/"}) {
-
+      
       // reconstructed data histograms
       {
         // track histograms
         {
           std::string lPath(fPrefixReconstructedInfoHistos + "track/" + bac);
-      for (auto& tHisto : fTrackHistoDefinitions) {
-        std::string lFullName(lPath + tHisto.name);
-        fTrackHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-      }
-    }
-
-    // v0 histograms
-    {
-      std::string lPath(fPrefixReconstructedInfoHistos + "v0/" + bac);
-      for (auto tHisto : fV0HistoDefinitions) {
-        if (tHisto.name == "IsPhotonSelected" && bac == "beforeCuts/") {
-          continue;
+          for (auto& tHisto : fTrackHistoDefinitions) {
+            std::string lFullName(lPath + tHisto.name);
+            LOGF(debug, "adding %s", lFullName);
+            fTrackHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+          }
         }
-        std::string lFullName(lPath + tHisto.name);
-        fV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+
+        // v0 histograms
+        {
+          std::string lPath(fPrefixReconstructedInfoHistos + "v0/" + bac);
+          for (auto tHisto : fV0HistoDefinitions) {
+            if (tHisto.name == "IsPhotonSelected" && bac == "beforeCuts/") {
+              continue;
+            }
+            std::string lFullName(lPath + tHisto.name);
+                        LOGF(debug, "adding %s", lFullName);
+
+            fV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+          }
+        }
+      }
+
+      // MC information histos
+      {
+        // v0 Resolution histos
+        {
+          std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + bac);
+          for (auto tHisto : fV0ResolutionHistoDefinitions) {
+            std::string lFullName(lPath + tHisto.name);
+            LOGF(debug, "adding %s", lFullName);
+            fV0ResolutionHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+          }
+        }
+
+        // reconstructed info of MC validated V0s histos
+        {
+          {
+            std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + bac);
+            for (auto tHisto : fV0ReconstructedInfoMCValidatedHistoDefinitions) {
+              std::string lFullName(lPath + tHisto.name);
+              LOGF(debug, "adding %s", lFullName);
+              fV0ReconstructedInfoMCValidatedHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+            }
+          }
+        }
+
+        // v0 Info only histos
+        {
+          std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac);
+          for (auto tHisto : fV0MCInfoOnlyHistoDefinitions) {
+            std::string lFullName(lPath + tHisto.name);
+            LOGF(debug, "adding %s", lFullName);
+            fV0MCInfoOnlyHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+          }
+        }
+      }
+    }
+
+    {
+      // do some labeling
+      auto lIsPhotonSelectedHisto = fV0Histos.find(fFullNameIsPhotonSelectedHisto);
+      if (lIsPhotonSelectedHisto != fV0Histos.end()) {
+        TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lIsPhotonSelectedHisto->second)->GetXaxis();
+        for (auto& lPairIt : fPhotonCutIndeces) {
+          lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
+        }
       }
     }
   }
 
-  // MC information histos
+  // SFS todo: think about if this is actually too expensive. Going the other way round with the indices as keys wouldnt require lookups at inserting but pbly produce a but of code duplication at the definition of the cut names
+  size_t gMax_size = (size_t)-1;
+  size_t getPhotonCutIndex(std::string const& theKey)
   {
-    // v0 Resolution histos
-    {
-      std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + bac);
-      for (auto tHisto : fV0ResolutionHistoDefinitions) {
-        std::string lFullName(lPath + tHisto.name);
-        fV0ResolutionHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-      }
+    auto lPairIt = fPhotonCutIndeces.find(theKey);
+    if (lPairIt != fPhotonCutIndeces.end()) {
+      return lPairIt->second;
     }
-
-    // reconstructed info of MC validated V0s histos
-    {
-      {std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + bac);
-    for (auto tHisto : fV0ReconstructedInfoMCValidatedHistoDefinitions) {
-      std::string lFullName(lPath + tHisto.name);
-      fV0ReconstructedInfoMCValidatedHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-    }
+    return gMax_size;
   }
-}
-
-// v0 Info only histos
-{
-  std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac);
-  for (auto tHisto : fV0MCInfoOnlyHistoDefinitions) {
-    std::string lFullName(lPath + tHisto.name);
-    fV0MCInfoOnlyHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-  }
-}
-}
-}
-
-{
-  // do some labeling
-  auto lIsPhotonSelectedHisto = fV0Histos.find(fFullNameIsPhotonSelectedHisto);
-  if (lIsPhotonSelectedHisto != fV0Histos.end()) {
-    TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lIsPhotonSelectedHisto->second)->GetXaxis();
-    for (auto& lPairIt : fPhotonCutIndeces) {
-      lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
-    }
-  }
-}
-}
-
-// SFS todo: think about if this is actually too expensive. Going the other way round with the indices as keys wouldnt require lookups at inserting but pbly produce a but of code duplication at the definition of the cut names
-size_t gMax_size = (size_t)-1;
-size_t getPhotonCutIndex(std::string const& theKey)
-{
-  auto lPairIt = fPhotonCutIndeces.find(theKey);
-  if (lPairIt != fPhotonCutIndeces.end()) {
-    return lPairIt->second;
-  }
-  return gMax_size;
-}
 
 template <typename TCOLL, typename TV0, typename TTRACK>
 bool processPhoton(TCOLL const& theCollision, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg)
@@ -386,27 +394,25 @@ void processTruePhoton(std::string theBAC, const TV0& theV0, const TTRACK& theTr
     for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
 
       if (lMother.pdgCode() == 22) {
-
-        TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-        TVector3 lPosTrackVtxMC(theTrackPos.template mcParticle_as<aod::McParticles_001>().vx(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vy(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vz());
-
-        // take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
-        TVector3 lConvPointMC(lPosTrackVtxMC);
-
         // v0 resolution histos
         {
+          // SFS todo: take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
+          TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
+          TVector3 lPosTrackVtxMC(theTrackPos.template mcParticle_as<aod::McParticles_001>().vx(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vy(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vz());
+  
           std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + theBAC);
           fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lMother.pt());
           fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lMother.eta());
           fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lMother.phi());
-          fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", lConvPointRec.Perp() - lConvPointMC.Perp());
-          fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointMC).Mag());
+          fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lPosTrackVtxMC.Perp());
+          fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lPosTrackVtxMC).Mag());
         }
 
         // reconstructed info of MC validated V0s histos
         {
           std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
           fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
+          fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
         }
 
         // v0 MCInfoOnly histos

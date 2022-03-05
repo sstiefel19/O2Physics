@@ -33,7 +33,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using collisionEvSelIt = aod::Collisions::iterator;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 #include "Framework/runDataProcessing.h"
@@ -425,7 +424,7 @@ void processTruePhoton(std::string theBAC, const TV0& theV0, const TTRACK& theTr
   }
 }
 
-  void processMC(collisionEvSelIt const& theCollision,
+  void processMC(aod::Collisions::iterator  const& theCollision,
                  aod::V0Datas const& theV0s,
                  tracksAndTPCInfoMC const& theTracks,
                  aod::McParticles const& theMcParticles)

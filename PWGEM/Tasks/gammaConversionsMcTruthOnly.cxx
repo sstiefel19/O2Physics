@@ -14,6 +14,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/StrangenessTables.h"
+
 
 #include <TH1.h>
 #include <TH1F.h>
@@ -27,63 +29,49 @@ using namespace o2::framework::expressions;
 
 #include "Framework/runDataProcessing.h"
 
-
-// Loop over MCColisions and get corresponding collisions (there can be more than one)
-// For each of them get the corresponding tracks
-// Note the use of "SmallGroups" template, that allows to handle both Run 2, where
-// we have exactly 1-to-1 correspondence between collisions and mc collisions, and
-// Run 3, where we can have 0, 1, or more collisions for a given mc collision
-struct LoopOverMcMatched {
-  OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
-  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions,
-               soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
-  {
-    // access MC truth information with mcCollision() and mcParticle() methods
-    LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
-    for (auto& collision : collisions) {
-      LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
-
-      // NOTE this will be replaced by a improved grouping in the future
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      LOGF(info, "  which has %d tracks", groupedTracks.size());
-      for (auto& track : groupedTracks) {
-        if (!track.has_mcParticle()) {
-          LOGF(warning, "No MC particle for track, skip...");
-          continue;
-        }
-        etaDiff->Fill(track.mcParticle().eta() - track.eta());
-      }
-    }
-  }
-};
-
-// Simple access to collision
 struct gammaConversionsMcTruthOnly {
-  OutputObj<TH1F> hGammaPt{TH1F("hGammaPt", "hGammaPt", 800, 0.f, 25.f)};
+  OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "hEventCounter", 2, 0.f, 2.f)};
+  OutputObj<TH1F> hGammaProdInAcc{TH1F("hGammaProdInAcc", "hGammaProdInAcc", 800, 0.f, 25.f)};
+  OutputObj<TH1F> hGammaMoreThanTwoDaughtersPt{TH1F("hGammaMoreThanTwoDaughtersPt", "hGammaMoreThanTwoDaughtersPt", 800, 0.f, 25.f)};
   OutputObj<TH1F> hGammaConvertedPt{TH1F("hGammaConvertedPt", "hGammaConvertedPt", 800, 0.f, 25.f)};
-  OutputObj<TH1F> hGammaConvertedR{TH1F("hGammaConvertedR", "hGammaConvertedR", 800, 0.f, 250.f)};
-
-
+  OutputObj<TH1F> hGammaConvertedR{TH1F("hGammaConvertedR", "hGammaConvertedR", 1600, 0.f, 500.f)};
+  OutputObj<TH2F> hGammaConvertedRPt{TH2F("hGammaConvertedRPt", "hGammaConvertedRPt", 400, 0.f, 250.f, 400, 0.f, 25.f)};
+  
   // loop over MC truth McCollisions
-  void process(aod::McCollision const& theMcCollision,
-               aod::McParticles const& theMcParticles)
+  void process(aod::McCollision                             const& mcCollision, 
+               soa::SmallGroups<soa::Join<aod::McCollisionLabels, 
+                                          aod::Collisions>> const& collisions,
+               aod::McParticles                             const& theMcParticles)
   {    
-    for (auto& lMcParticle : theMcParticles) {
-      
-      if (lMcParticle.pdgCode() == 22){
-        hGammaPt->Fill(lMcParticle.pt());
+    hEventCounter->Fill(0.5);
+    for (auto& collision : collisions) {
+      hEventCounter->Fill(1.5);
+      for (auto& lMcParticle : theMcParticles) {  
         
-        size_t lBothElectrons = 0;
-        if (lMcParticle.has_daughters()) {
-          for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-            lBothElectrons += std::abs(lDaughter.pdgCode()) == 11;
-          }
-          if (lBothElectrons == 2){
-            hGammaConvertedPt->Fill(lMcParticle.pt());
-            
-            // SFS todo: this counts every conversion twice. correct
+        if ((lMcParticle.pdgCode() == 22) && 
+            (std::abs(lMcParticle.eta()) < 0.8)){ // SFS todo: track v0 eta??
+          
+          hGammaProdInAcc->Fill(lMcParticle.pt());
+          
+          size_t lBothElectrons = 0;
+          if (lMcParticle.has_daughters()) {
             for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-              hGammaConvertedR->Fill(std::sqrt(std::pow(lDaughter.vx(),2) + std::pow(lDaughter.vy(),2)));
+              lBothElectrons += std::abs(lDaughter.pdgCode()) == 11;
+            }
+            if (lBothElectrons == 2){
+              for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
+                float lConversionRadius = std::sqrt(std::pow(lDaughter.vx(),2) + std::pow(lDaughter.vy(),2));
+                hGammaConvertedR->Fill(lConversionRadius);
+                hGammaConvertedRPt->Fill(lConversionRadius, lMcParticle.pt());
+                
+                if (lConversionRadius > 5. && lConversionRadius < 180.){
+                  hGammaConvertedPt->Fill(lMcParticle.pt());  
+                }
+                break;
+              }
+            }
+            if (lBothElectrons > 2){
+              hGammaMoreThanTwoDaughtersPt->Fill(lMcParticle.pt());
             }
           }
         }
@@ -91,7 +79,6 @@ struct gammaConversionsMcTruthOnly {
     }
   }
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

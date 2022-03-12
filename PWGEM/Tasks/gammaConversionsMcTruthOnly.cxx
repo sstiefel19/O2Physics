@@ -28,6 +28,111 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 #include "Framework/runDataProcessing.h"
+//using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+
+using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
+
+struct gammaConversionsRubenDirect {
+  OutputObj<TH1F> hGammaReconctructedPtTrue{TH1F("hGammaReconctructedPtTrue", "hGammaReconctructedPtTrue", 800, 0.f, 25.f)};
+  
+  
+  void process(aod::Collisions::iterator     const& theCollision,
+               aod::V0s                      const& theV0s,
+               tracksAndMcLabels             const& theTracks,
+               aod::McParticles              const& theMcParticles)
+  {
+    for (auto& lV0 : theV0s) {
+
+      auto lTrackPos = lV0.template posTrack_as<tracksAndMcLabels>(); // positive daughter
+      auto lTrackNeg = lV0.template negTrack_as<tracksAndMcLabels>(); // negative daughter
+
+      auto lMcPos = lTrackPos.template mcParticle_as<aod::McParticles_001>();
+      auto lMcNeg = lTrackNeg.template mcParticle_as<aod::McParticles_001>();
+      
+        //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+      std::vector<int> lMothers;
+      for (auto& mP : lMcPos.template mothers_as<aod::McParticles_001>()) {
+        LOGF(info, "   mother index mP: %d", mP.globalIndex());
+        lMothers.push_back(mP.globalIndex());
+      }
+    
+      if (lMothers.size() > 0) {
+        for (auto& mN : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+          LOGF(info, "   mother index mN: %d", mN.globalIndex());
+          lMothers.push_back(mN.globalIndex());
+        }
+      }
+    
+      // SFS verify theyre all the same category and remove
+      int lSame = 0;
+      {
+        if (lMothers.size() == 2) {
+          if (lMothers[0] == lMothers[1]) {
+            LOGF(info, "size2: 01");
+            lSame = 1;
+          }
+        }
+    
+        if (lMothers.size() == 3) {
+          if (lMothers[0] == lMothers[1]) {
+            LOGF(info, "size3: 01");
+            lSame = 2;
+          }
+          if (lMothers[0] == lMothers[2]) {
+            LOGF(info, "size2: 02");
+            lSame = 3;
+          }
+          if (lMothers[1] == lMothers[2]) {
+            LOGF(info, "size2: 12");
+            lSame = 4;
+          }
+        }
+    
+        if (lMothers.size() == 4) {
+          if (lMothers[0] == lMothers[2]) {
+            LOGF(info, "size4 02");
+            lSame = 4;
+          }
+          if (lMothers[1] == lMothers[3]) {
+            LOGF(info, "size4 13");
+            lSame = 5;
+          }
+          if (lMothers[0] == lMothers[3]) {
+            LOGF(info, "size4 03");
+            lSame = 6;
+          }
+          if (lMothers[1] == lMothers[2]) {
+            LOGF(info, "size4 12");
+            lSame = 7;
+          }
+          if (lMothers[0] == lMothers[1]) {
+            LOGF(info, "size4 01");
+            lSame = 8;
+          }
+          if (lMothers[2] == lMothers[3]) {
+            LOGF(info, "size4 23");
+            lSame = 9;
+          }
+        }
+      }
+    
+      if (lSame) {
+    
+        // SFS todo: actually no loop required here, for this
+        for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+    
+          if (lMother.pdgCode() == 22) {
+            
+            hGammaReconctructedPtTrue->Fill(lMother.pt());
+            
+          }
+        }
+      }
+    }
+  }
+};
+  
+
 
 struct gammaConversionsMcTruthOnly {
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "hEventCounter", 2, 0.f, 2.f)};
@@ -38,10 +143,10 @@ struct gammaConversionsMcTruthOnly {
   OutputObj<TH2F> hGammaConvertedRPt{TH2F("hGammaConvertedRPt", "hGammaConvertedRPt", 400, 0.f, 250.f, 400, 0.f, 25.f)};
   
   // loop over MC truth McCollisions
-  void process(aod::McCollision                             const& mcCollision, 
+  void process(aod::McCollision                                    const& mcCollision, 
                soa::SmallGroups<soa::Join<aod::McCollisionLabels, 
-                                          aod::Collisions>> const& collisions,
-               aod::McParticles                             const& theMcParticles)
+                                          aod::Collisions>>        const& collisions,
+               aod::McParticles                                    const& theMcParticles)
   {    
     hEventCounter->Fill(0.5);
     for (auto& collision : collisions) {
@@ -82,5 +187,6 @@ struct gammaConversionsMcTruthOnly {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<gammaConversionsMcTruthOnly>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<gammaConversionsMcTruthOnly>(cfgc),
+                      adaptAnalysisTask<gammaConversionsRubenDirect>(cfgc)};
 }

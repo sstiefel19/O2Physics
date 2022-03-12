@@ -37,7 +37,6 @@ using namespace o2::framework::expressions;
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
-
 namespace o2::aod
 {
 /*namespace gammatrackspos
@@ -59,7 +58,26 @@ DECLARE_SOA_COLUMN(TpcNSigmaEl, negtpcnsigmael, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPi, negtpcnsigmapi, float);
 DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, negtpcfoundoverfindablecls, float);
 DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, negtpccrossedrowsoverfindablecls, float);
-} // namespace gammatracksneg */
+} // namespace gammatracksneg 
+
+DECLARE_SOA_TABLE(GammaConversionsTrackDataPos, "AOD", "GACOTRPOS",
+                  gammatrackspos::Pt,
+                  gammatrackspos::Eta,
+                  gammatrackspos::P,
+                  gammatrackspos::TpcNSigmaEl,
+                  gammatrackspos::TpcNSigmaPi,
+                  gammatrackspos::TpcFoundOverFindableCls,
+                  gammatrackspos::TpcCrossedRowsOverFindableCls);
+
+DECLARE_SOA_TABLE(GammaConversionsTrackDataNeg, "AOD", "GACOTRNEG",                  
+                  gammatracksneg::Pt,
+                  gammatracksneg::Eta,
+                  gammatracksneg::P,
+                  gammatracksneg::TpcNSigmaEl,
+                  gammatracksneg::TpcNSigmaPi,
+                  gammatracksneg::TpcFoundOverFindableCls,
+                  gammatracksneg::TpcCrossedRowsOverFindableCls);
+*/
 
 namespace gammatracks
 {
@@ -80,48 +98,7 @@ DECLARE_SOA_COLUMN(NegTpcFoundOverFindableCls, negtpcfoundoverfindablecls, float
 DECLARE_SOA_COLUMN(NegTpcCrossedRowsOverFindableCls, negtpccrossedrowsoverfindablecls, float);
 } // namespace gammatracks
 
-namespace gammasinforec
-{
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
-DECLARE_SOA_COLUMN(V0CosPA, v0cospa, float);
-DECLARE_SOA_COLUMN(Alpha, alpha, float);
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);
-DECLARE_SOA_COLUMN(Vx, vx, float);
-DECLARE_SOA_COLUMN(Vy, vy, float);
-DECLARE_SOA_COLUMN(Vz, vz, float);
-
 /* SFS todo: + index auf gammasinfotrue table for true indices*/
-} // gammasinforec
-
-//~ namespace gammasinfotrue
-//~ {
-//~ DECLARE_SOA_COLUMN(Pt, pt, float);
-//~ DECLARE_SOA_COLUMN(Eta, eta, float);
-//~ DECLARE_SOA_COLUMN(Phi, phi, float);
-//~ DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
-
-//~ } // gammasinfotrue
-
-/*DECLARE_SOA_TABLE(GammaConversionsTrackDataPos, "AOD", "GACOTRPOS",
-                  gammatrackspos::Pt,
-                  gammatrackspos::Eta,
-                  gammatrackspos::P,
-                  gammatrackspos::TpcNSigmaEl,
-                  gammatrackspos::TpcNSigmaPi,
-                  gammatrackspos::TpcFoundOverFindableCls,
-                  gammatrackspos::TpcCrossedRowsOverFindableCls);
-
-DECLARE_SOA_TABLE(GammaConversionsTrackDataNeg, "AOD", "GACOTRNEG",                  
-                  gammatracksneg::Pt,
-                  gammatracksneg::Eta,
-                  gammatracksneg::P,
-                  gammatracksneg::TpcNSigmaEl,
-                  gammatracksneg::TpcNSigmaPi,
-                  gammatracksneg::TpcFoundOverFindableCls,
-                  gammatracksneg::TpcCrossedRowsOverFindableCls);*/
 
 DECLARE_SOA_TABLE(GammaConversionsTrackData, "AOD", "GACONVTR",
                   gammatracks::PosPt,
@@ -138,27 +115,6 @@ DECLARE_SOA_TABLE(GammaConversionsTrackData, "AOD", "GACONVTR",
                   gammatracks::NegTpcNSigmaPi,
                   gammatracks::NegTpcFoundOverFindableCls,
                   gammatracks::NegTpcCrossedRowsOverFindableCls);
-
-DECLARE_SOA_TABLE(GammaConversionsData, "AOD", "GACONV",
-                  gammasrec::Pt,
-                  gammasrec::Eta,
-                  gammasrec::Phi,
-                  gammasrec::V0Radius,
-                  gammasrec::V0CosPA,
-                  gammasrec::Alpha,
-                  gammasrec::QtArm,
-                  gammasrec::PsiPair,
-                  gammasrec::Vx,
-                  gammasrec::Vy,
-                  gammasrec::Vz);
-
-DECLARE_SOA_TABLE(GammaConversionsTrueData, "AOD", "GACONVTRUE",
-                  gammasrec::Pt,
-                  gammasrec::Eta,
-                  gammasrec::Phi,
-                  gammasrec::Vx,
-                  gammasrec::Vy,
-                  gammasrec::Vz);
 } // namespace o2::aod
 
 #include "Framework/runDataProcessing.h"
@@ -297,8 +253,10 @@ struct SkimmerMc {
     {"kPhotonOut", 12}};
 
   Produces<aod::GammaConversionsTrackData> fFuncTableTracks;
-  Produces<aod::GammaConversionsData> fFuncConversionData;
-  Produces<aod::GammaConversionsTrueData> fFuncConversionTrueData;
+
+  //Produces<aod::GammaConversionsData> fFuncConversionData;
+  //Produces<aod::GammaConversionsTrueData> fFuncConversionTrueData;
+  //Produces<aod::StoredV0Datas> fFuncConversionTrueData;
   /*Produces<aod::GammaConversionsTrackDataPos> fFuncTableTracksPos;
   Produces<aod::GammaConversionsTrackDataNeg> fFuncTableTracksNeg;*/
 
@@ -421,7 +379,7 @@ bool processPhoton(TCOLL const& theCollision, const TV0& theV0, const TTRACK& th
                    theTrackNeg.tpcNSigmaPi(),
                    theTrackNeg.tpcFoundOverFindableCls(),
                    theTrackNeg.tpcCrossedRowsOverFindableCls());
-  
+  /*
   fFuncConversionData(theV0.pt(),
                       theV0.eta(),
                       theV0.phi(),
@@ -430,7 +388,7 @@ bool processPhoton(TCOLL const& theCollision, const TV0& theV0, const TTRACK& th
                       theV0.alpha(),
                       theV0.qtarm(),
                       theV0.psipair());
-
+  */
   fillReconstructedInfoHistograms("afterCuts/",
                                   theV0,
                                   theTrackPos,
@@ -452,84 +410,6 @@ void processTruePhoton(std::string theBAC, const TV0& theV0, const TTRACK& theTr
   auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles_001>();
   auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles_001>();
 
-  //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-  std::vector<int> lMothers;
-  for (auto& mP : lMcPos.template mothers_as<aod::McParticles_001>()) {
-    LOGF(info, "   mother index mP: %d", mP.globalIndex());
-    lMothers.push_back(mP.globalIndex());
-  }
-
-  if (lMothers.size() > 0) {
-    for (auto& mN : lMcNeg.template mothers_as<aod::McParticles_001>()) {
-      LOGF(info, "   mother index mN: %d", mN.globalIndex());
-      lMothers.push_back(mN.globalIndex());
-    }
-  }
-
-  // SFS verify theyre all the same category and remove
-  int lSame = 0;
-  {
-    if (lMothers.size() == 2) {
-      if (lMothers[0] == lMothers[1]) {
-        LOGF(info, "size2: 01");
-        lSame = 1;
-      }
-    }
-
-    if (lMothers.size() == 3) {
-      if (lMothers[0] == lMothers[1]) {
-        LOGF(info, "size3: 01");
-        lSame = 2;
-      }
-      if (lMothers[0] == lMothers[2]) {
-        LOGF(info, "size2: 02");
-        lSame = 3;
-      }
-      if (lMothers[1] == lMothers[2]) {
-        LOGF(info, "size2: 12");
-        lSame = 4;
-      }
-    }
-
-    if (lMothers.size() == 4) {
-      if (lMothers[0] == lMothers[2]) {
-        LOGF(info, "size4 02");
-        lSame = 4;
-      }
-      if (lMothers[1] == lMothers[3]) {
-        LOGF(info, "size4 13");
-        lSame = 5;
-      }
-      if (lMothers[0] == lMothers[3]) {
-        LOGF(info, "size4 03");
-        lSame = 6;
-      }
-      if (lMothers[1] == lMothers[2]) {
-        LOGF(info, "size4 12");
-        lSame = 7;
-      }
-      if (lMothers[0] == lMothers[1]) {
-        LOGF(info, "size4 01");
-        lSame = 8;
-      }
-      if (lMothers[2] == lMothers[3]) {
-        LOGF(info, "size4 23");
-        lSame = 9;
-      }
-    }
-  }
-
-  if (lSame) {
-
-    // SFS todo: actually no loop required here, for this
-    for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
-
-      if (lMother.pdgCode() == 22) {
-       
-        fFuncConversionTrueData(Mother.pt(), Mother.eta(), Mother.phi(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vx(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vy(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vz());
-      }
-    }
-  }
 }
 
   void processMC(aod::Collisions::iterator  const& theCollision,

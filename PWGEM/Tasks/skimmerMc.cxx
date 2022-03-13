@@ -80,21 +80,23 @@ DECLARE_SOA_TABLE(GammaConversionsTrackDataNeg, "AOD", "GACOTRNEG",
 
 namespace gammatracksreco
 {
-DECLARE_SOA_COLUMN(PosPt, pospt, float);
-DECLARE_SOA_COLUMN(PosEta, posmaxpt, float);
+//~ DECLARE_SOA_COLUMN(PosPt, pospt, float);
+//~ DECLARE_SOA_COLUMN(PosEta, posmaxpt, float);
 DECLARE_SOA_COLUMN(PosP, posp, float);
-DECLARE_SOA_COLUMN(PosTpcNSigmaEl, postpcnsigmael, float);
-DECLARE_SOA_COLUMN(PosTpcNSigmaPi, postpcnsigmapi, float);
-DECLARE_SOA_COLUMN(PosTpcFoundOverFindableCls, postpcfoundoverfindablecls, float);
-DECLARE_SOA_COLUMN(PosTpcCrossedRowsOverFindableCls, postpccrossedrowsoverfindablecls, float);
+DECLARE_SOA_COLUMN(PosTpcSignal, posTpcSignal, float);
+DECLARE_SOA_COLUMN(PosTpcNSigmaEl, posTpcNsigmaEl, float);
+DECLARE_SOA_COLUMN(PosTpcNSigmaPi, posTpcNsigmaPi, float);
+DECLARE_SOA_COLUMN(PosTpcFoundOverFindableCls, posTpcFoundOverFindableCls, float);
+DECLARE_SOA_COLUMN(PosTpcCrossedRowsOverFindableCls, posTpcCrossedRowsOverFindableCls, float);
 
-DECLARE_SOA_COLUMN(NegPt, negpt, float);
-DECLARE_SOA_COLUMN(NegEta, negmaxpt, float);
+//~ DECLARE_SOA_COLUMN(NegPt, negpt, float);
+//~ DECLARE_SOA_COLUMN(NegEta, negmaxpt, float);
 DECLARE_SOA_COLUMN(NegP, negp, float);
-DECLARE_SOA_COLUMN(NegTpcNSigmaEl, negtpcnsigmael, float);
-DECLARE_SOA_COLUMN(NegTpcNSigmaPi, negtpcnsigmapi, float);
-DECLARE_SOA_COLUMN(NegTpcFoundOverFindableCls, negtpcfoundoverfindablecls, float);
-DECLARE_SOA_COLUMN(NegTpcCrossedRowsOverFindableCls, negtpccrossedrowsoverfindablecls, float);
+DECLARE_SOA_COLUMN(NegTpcSignal, negTpcSignal, float);
+DECLARE_SOA_COLUMN(NegTpcNSigmaEl, negTpcNsigmaEl, float);
+DECLARE_SOA_COLUMN(NegTpcNSigmaPi, negTpcNsigmaPi, float);
+DECLARE_SOA_COLUMN(NegTpcFoundOverFindableCls, negTpcFoundOverFindableCls, float);
+DECLARE_SOA_COLUMN(NegTpcCrossedRowsOverFindableCls, negTpcCrossedRowsOverFindableCls, float);
 
 DECLARE_SOA_COLUMN(IsConversionPhoton, isconversionphoton, bool);
 } // namespace gammatracksreco
@@ -106,24 +108,56 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 } // gammamctrue
 
-DECLARE_SOA_TABLE(GammaConversionsTracksReco, "AOD", "V0TRACKSRECO",
-                  gammatracksreco::PosPt,
-                  gammatracksreco::PosEta,
+DECLARE_SOA_TABLE(GammaConversionsInfoReco, "AOD", "V0INFORECO",
+                  o2::soa::Index<>, v0data::CollisionId, v0data::V0Id,
+                  v0data::PosX, v0data::NegX, // don't know yet if I need those
+                  v0data::X, v0data::Y, v0data::Z,
+                  v0data::PxPos, v0data::PyPos, v0data::PzPos,
+                  v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
+                  v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
+                  gammatracksreco::IsConversionPhoton,
+                  // pos Track
                   gammatracksreco::PosP,
+                  gammatracksreco::PosTpcFoundOverFindableCls,
+                  gammatracksreco::PosTpcCrossedRowsOverFindableCls,
+                  gammatracksreco::PosTpcSignal,
                   gammatracksreco::PosTpcNSigmaEl,
                   gammatracksreco::PosTpcNSigmaPi,
-                  gammatracksreco::PosTpcFoundOverFindableCls,
-                  gammatracksreco::PosTpcCrossedRowsOverFindableCls, 
-                  gammatracksreco::NegPt,
-                  gammatracksreco::NegEta,
+                  // neg Track
                   gammatracksreco::NegP,
-                  gammatracksreco::NegTpcNSigmaEl,
-                  gammatracksreco::NegTpcNSigmaPi,
                   gammatracksreco::NegTpcFoundOverFindableCls,
                   gammatracksreco::NegTpcCrossedRowsOverFindableCls,
-                  gammatracksreco::IsConversionPhoton);
+                  gammatracksreco::NegTpcSignal,
+                  gammatracksreco::NegTpcNSigmaEl,
+                  gammatracksreco::NegTpcNSigmaPi,
+                  // Dynamic columns
+                  v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                  v0data::V0Radius<v0data::X, v0data::Y>,
+                  v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
+                  v0data::V0CosPA<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
+                  v0data::DCAV0ToPV<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
+                  v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  // Invariant masses
+                  v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  // Longitudinal
+                  v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
+                  v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
+                  v0data::Eta<v0data::Px, v0data::Py, v0data::Pz>,
+                  v0data::Phi<v0data::Px, v0data::Py>,
+                  v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
+                  v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
+                  v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
+                  v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
+                  v0data::PositivePhi<v0data::PxPos, v0data::PyPos>);
 
-DECLARE_SOA_TABLE(GammaConversionsTrue, "AOD", "V0STRUE",
+// SFS todo: need to add some sort of indexing here to get from recos to true table
+DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
                   v0data::X, 
                   v0data::Y, 
                   v0data::Z,
@@ -139,8 +173,8 @@ struct SkimmerMc {
   // ============================ DEFINITION OF HISTOGRAMS ================================================
     
   // ============================ TABLES TO WRITTEN TO AO2D.root ==========================================
-  Produces<aod::GammaConversionsTracksReco> fFuncTableTracksRecoData;
-  Produces<aod::GammaConversionsTrue> fFuncTableGammasTrueData;
+  Produces<aod::GammaConversionsInfoReco> fFuncTableV0InfoReco;
+  Produces<aod::GammaConversionsInfoTrue> fFuncTableV0InfoTrue;
 
   // ============================ FUNCTION DEFINITIONS ====================================================
   void process(aod::Collisions::iterator  const &theCollision,
@@ -151,26 +185,30 @@ struct SkimmerMc {
     for (auto& lV0 : theV0s) {
 
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
-      auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+      auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter                  
       
-      fFuncTableTracksRecoData(lTrackPos.pt(), 
-                               lTrackPos.eta(),
-                               lTrackPos.p(),
-                               lTrackPos.tpcNSigmaEl(),
-                               lTrackPos.tpcNSigmaPi(),
-                               lTrackPos.tpcFoundOverFindableCls(),
-                               lTrackPos.tpcCrossedRowsOverFindableCls(),
-                               lTrackNeg.pt(), 
-                               lTrackNeg.eta(),
-                               lTrackNeg.p(),
-                               lTrackNeg.tpcNSigmaEl(),
-                               lTrackNeg.tpcNSigmaPi(),
-                               lTrackNeg.tpcFoundOverFindableCls(),
-                               lTrackNeg.tpcCrossedRowsOverFindableCls(),
+      fFuncTableV0InfoReco(lV0.collisionId(), lV0.globalIndex(),
+                               lV0.posX(), lV0.negX(),
+                               lV0.x(), lV0.y(), lV0.z(),
+                               lV0.pxpos(), lV0.pypos(), lV0.pzpos(),
+                               lV0.pxneg(), lV0.pyneg(), lV0.pzneg(),
+                               lV0.dcaV0daughters(), lV0.dcapostopv(), lV0.dcanegtopv(),
                                isPhoton(lV0,
                                         lTrackPos,
                                         lTrackNeg,
-                                        theMcParticles));
+                                        theMcParticles),
+                               lTrackPos.p(),
+                               lTrackPos.tpcFoundOverFindableCls(),
+                               lTrackPos.tpcCrossedRowsOverFindableCls(),
+                               lTrackPos.tpcSignal(),
+                               lTrackPos.tpcNSigmaEl(),
+                               lTrackPos.tpcNSigmaPi(),
+                               lTrackNeg.p(),
+                               lTrackNeg.tpcFoundOverFindableCls(),
+                               lTrackNeg.tpcCrossedRowsOverFindableCls(),
+                               lTrackNeg.tpcSignal(),
+                               lTrackNeg.tpcNSigmaEl(),
+                               lTrackNeg.tpcNSigmaPi());
     }
   }
   
@@ -261,12 +299,12 @@ struct SkimmerMc {
       for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
 
         if ((lIsPhoton = lMother.pdgCode()==22)) {
-          fFuncTableGammasTrueData(lMcPos.vx(),
-                                   lMcPos.vy(), 
-                                   lMcPos.vz(),
-                                   lMother.eta(),
-                                   lMother.phi(),
-                                   lMother.pt());
+          fFuncTableV0InfoTrue(lMcPos.vx(),
+                               lMcPos.vy(), 
+                               lMcPos.vz(),
+                               lMother.eta(),
+                               lMother.phi(),
+                               lMother.pt());
         }
       }
     }

@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \brief perform photon conversion analysis on V0 candidates from aod::StoredV0Datas
+/// dependencies: o2-analysis-lf-lambdakzerobuilder
+/// \author stephan.friedrich.stiefelmaier@cern.ch
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 

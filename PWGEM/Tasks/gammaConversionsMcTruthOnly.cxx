@@ -9,7 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief apply cuts to get photons from table aod::StoredV0Datas produced by o2-analysis-lf-lambdakzerobuilder and produce plots.
+/// \brief extract relevant mc truth information that allows to compute efficiency, purity and more quantities for the photon conversion analysis.
+/// dependencies: none
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
 #include "Framework/AnalysisTask.h"

@@ -283,30 +283,64 @@ struct GammaConversionsConsumermc {
     return gMax_size;
   }
 
-template <typename TCOLL, typename TV0>
-bool processPhoton(TCOLL const& theCollision, const TV0& theV0)
-{
-  float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+  template <typename TCOLL, typename TV0, typename TTRACKS>
+  bool processPhoton(TCOLL const &theCollision, TV0 const &theV0, TTRACKS const &theV0Tracks)
+  {
+    auto lV0Tracks = theV0Tracks.sliceBy(aod::v0data::v0Id, theV0.globalIndex());
+    
+    float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+    
+    fillReconstructedInfoHistograms("beforeCuts/",
+                                    theV0,
+                                    lV0Tracks,
+                                    lV0CosinePA);
+                                    
+    for (auto &lTrack : theV0Tracks){
+      if (!trackPassesCuts(lTrack)) {
+        return kFALSE;
+      }
+    }
 
-  fillReconstructedInfoHistograms("beforeCuts/",
-                                  theV0,
-                                  lV0CosinePA);
-  // apply track cuts
-  if (!(v0PassesTracksCuts(theV0)) {
-    return kFALSE;
+    // apply photon cuts
+    if (!passesPhotonCuts(theV0, lV0CosinePA)) {
+      return kFALSE;
+    }
+
+    fillReconstructedInfoHistograms("afterCuts/",
+                                    theV0,
+                                    lV0Tracks,
+                                    lV0CosinePA);
+
+    return kTRUE;
   }
 
-  // apply photon cuts
-  if (!passesPhotonCuts(theV0, lV0CosinePA)) {
-    return kFALSE;
-  }
+//~ template <typename TCOLL, typename TV0, typename TV0TRACKS>
+//~ bool processPhoton(TCOLL const &theCollision, TV0 const &theV0, TV0TRACKS const &theV0Tracks)
+//~ {
+  //~ float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
 
-  fillReconstructedInfoHistograms("afterCuts/",
-                                  theV0,
-                                  lV0CosinePA);
+  //~ fillReconstructedInfoHistograms("beforeCuts/",
+                                  //~ theV0,
+                                  //~ lV0CosinePA);
+                                  
+  //~ // apply track cuts
+  //~ for (auto &lTrack : theV0Tracks){
+    //~ if (!trackPassesCuts(lTrack)) {
+      //~ return kFALSE;
+    //~ }
+  //~ }
 
-  return kTRUE;
-}
+  //~ // apply photon cuts
+  //~ if (!passesPhotonCuts(theV0, lV0CosinePA)) {
+    //~ return kFALSE;
+  //~ }
+
+  //~ fillReconstructedInfoHistograms("afterCuts/",
+                                  //~ theV0,
+                                  //~ lV0CosinePA);
+
+  //~ return kTRUE;
+//~ }
 
 //~ template <typename TV0, typename TTRACK, typename TMC>
 //~ void processTruePhoton(std::string theBAC, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, const TMC& theMcParticles)
@@ -425,21 +459,24 @@ bool processPhoton(TCOLL const& theCollision, const TV0& theV0)
   //~ }
 //~ }
 
-  void process(aod::Collisions::iterator       const& theCollision,
-               aod::GammaConversionsInfoReco   const& theV0s)
+  void process(aod::Collisions::iterator  const& theCollision,
+               aod::V0Datas               const& theV0s,
+               aod::GammaConversionTracks const& theV0Tracks,
+               aod::GammaConversionsInfoTrue const& theV0sTrue)
   {
     for (auto& lV0 : theV0s) {
-
+      
+      
       //~ auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
       //~ auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
 
       //~ processTruePhoton("beforeCuts/",
                         //~ lV0,
-                        //~ lTrackPos,
+                          //~ lTrackPos,
                         //~ lTrackNeg,
                         //~ theMcParticles);
 
-      if (!processPhoton(theCollision, lV0)) {
+      if (!processPhoton(theCollision, lV0, theV0Tracks)) {
         continue;
       }
       //~ processTruePhoton("afterCuts/",
@@ -487,18 +524,20 @@ bool processPhoton(TCOLL const& theCollision, const TV0& theV0)
     }
   }
 
-  template <typename TTRACK>
-  void fillTrackHistograms(std::string theHistoPath, const TTRACK& theTrackPos, const TTRACK& theTrackNeg)
+  template <typename TTRACKS>
+  void fillTrackHistograms(std::string theHistoPath, TTRACKS const &theV0Tracks)
   {
-    auto fillTrackHistogramsI = [&](const TTRACK& theTrack) {
+    auto fillTrackHistogramsI = [&](auto const &theTrack) {
       fillTH1(fTrackHistos, theHistoPath + "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
       fillTH1(fTrackHistos, theHistoPath + "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
       fillTH2(fTrackHistos, theHistoPath + "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
       fillTH2(fTrackHistos, theHistoPath + "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
       fillTH2(fTrackHistos, theHistoPath + "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
     };
-    fillTrackHistogramsI(theTrackPos);
-    fillTrackHistogramsI(theTrackNeg);
+    
+    for (auto &lTrack : theV0Tracks){
+      fillTrackHistogramsI(lTrack);
+    }
   }
 
   template <typename TV0>
@@ -514,19 +553,19 @@ bool processPhoton(TCOLL const& theCollision, const TV0& theV0)
   }
 
   template <typename T>
-  bool v0PassesTracksCuts(const T& theV0)
+  bool trackPassesCuts(const T& theTrack)
   {
     // single track eta cut
-    if (TMath::Abs(theTrack.eta()) > fEtaCut) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
-      return kFALSE;
-    }
+    //~ if (TMath::Abs(theTrack.eta()) > fEtaCut) {
+      //~ fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
+      //~ return kFALSE;
+    //~ }
 
-    // single track pt cut
-    if (theTrack.pt() < fSinglePtCut) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
-      return kFALSE;
-    }
+    //~ // single track pt cut
+    //~ if (theTrack.pt() < fSinglePtCut) {
+      //~ fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
+      //~ return kFALSE;
+    //~ }
 
     if (!(selectionPIDTPC_track(theTrack))) {
       return kFALSE;
@@ -571,10 +610,10 @@ bool processPhoton(TCOLL const& theCollision, const TV0& theV0)
     return kTRUE;
   }
 
-  template <typename TV0, typename TTRACK>
-  void fillReconstructedInfoHistograms(std::string theBAC, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, float theV0CosinePA)
+  template <typename TV0, typename TTRACKS>
+  void fillReconstructedInfoHistograms(std::string theBAC, TV0 const &theV0, TTRACKS const &theV0Tracks, float theV0CosinePA)
   {
-    fillTrackHistograms(fPrefixReconstructedInfoHistos + "track/" + theBAC, theTrackPos, theTrackNeg);
+    fillTrackHistograms(fPrefixReconstructedInfoHistos + "track/" + theBAC, theV0Tracks);
     fillV0Histograms(fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, theV0CosinePA);
 
     if (theBAC == "beforeCuts/") {

@@ -28,6 +28,7 @@ o2physics_add_dpl_workflow(skimmermc
                     SOURCES skimmerMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
+                    
 o2physics_add_dpl_workflow(gammaconversionsconsumermc
                     SOURCES gammaConversionsConsumermc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing

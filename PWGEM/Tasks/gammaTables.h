@@ -8,7 +8,7 @@
 namespace o2::aod
 {
 namespace gammatrackreco
-{
+{    
 DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);
 DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(IsFromConversionPhoton, isFromConversionPhoton, bool);
@@ -20,7 +20,9 @@ DECLARE_SOA_TABLE(GammaConversionTracks, "AOD", "V0TRACKS",
                   gammatrackreco::IsFromConversionPhoton,
                   gammatrackreco::TpcFoundOverFindableCls,
                   gammatrackreco::TpcCrossedRowsOverFindableCls,
+                  track::Eta,
                   track::P,
+                  track::Pt,
                   track::TPCSignal,
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCNSigmaPi);

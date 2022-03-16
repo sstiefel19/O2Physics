@@ -29,15 +29,12 @@
 
 #include "gammaTables.h"
 
-//~ #include <iostream>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
-
 
 struct SkimmerMc {
   // ============================ DEFINITION OF CUT VARIABLES =============================================
@@ -50,33 +47,29 @@ struct SkimmerMc {
   
   // ============================ FUNCTION DEFINITIONS ====================================================
   void process(aod::Collisions::iterator  const &theCollision,
-               aod::V0s                  const& V0s,
+               aod::V0s,
                aod::V0Datas               const &theV0s,
                tracksAndTPCInfoMC         const &theTracks,
                aod::McParticles           const &theMcParticles)
   {
     auto fillTrackTable = [&](auto &theV0, auto &theTrack, bool theIsFromConversionPhoton){
       fFuncTableGammaTracks(
-        //~ theV0.v0(),
         theV0.v0Id(),
         theIsFromConversionPhoton,
         theTrack.tpcFoundOverFindableCls(),
         theTrack.tpcCrossedRowsOverFindableCls(),
+        theTrack.eta(),
         theTrack.p(),
+        theTrack.pt(),
         theTrack.tpcSignal(),
         theTrack.tpcNSigmaEl(),
         theTrack.tpcNSigmaPi());
     };
     
-    
     for (auto& lV0 : theV0s) {
 
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter    
-      
-      LOGF(debug, "SFS %d %d %d", lV0.globalIndex(), lV0.v0Id());
-      //~ LOGF(INFO, "%d", theV0.v0Index());
-      
       
       bool lIsConversionPhoton = isConversionPhoton(lV0,
                                                     lTrackPos,
@@ -87,7 +80,8 @@ struct SkimmerMc {
       fillTrackTable(lV0, lTrackNeg, lIsConversionPhoton);
     }
   }
-  
+
+  // SFS todo: make pretty and short
   template <typename TV0, typename TTRACK, typename TMC>
   bool isConversionPhoton(const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, const TMC& theMcParticles)
   {
@@ -98,7 +92,6 @@ struct SkimmerMc {
      * track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0
      */
 
-    //~ // use & here?
     auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles_001>();
     auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles_001>();
     

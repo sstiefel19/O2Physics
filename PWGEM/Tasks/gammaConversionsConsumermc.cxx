@@ -19,15 +19,8 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-
-#include "Common/DataModel/StrangenessTables.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h" // for BigTracks
-
-#include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
-
+// todo: probably move somewhere else
 #include "gammaTables.h"
-
 
 #include <TH1.h>
 #include <TH1F.h>
@@ -41,8 +34,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
-
 struct GammaConversionsConsumermc {
 
   Configurable<bool> fDoEventSel{"fDoEventSel", 0, "demand sel7 for events"};
@@ -287,9 +278,7 @@ struct GammaConversionsConsumermc {
   template <typename TCOLL, typename TV0, typename TTRACKS>
   bool processPhoton(TCOLL const &theCollision, TV0 const &theV0, TTRACKS const &theV0Tracks)
   {
-    //~ lV0IdInt = (int) theV0.v0()
     auto lV0Tracks = theV0Tracks.sliceBy(aod::v0data::v0Id, theV0.v0Id());
-    
     float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
     
     fillReconstructedInfoHistograms("beforeCuts/",
@@ -312,154 +301,45 @@ struct GammaConversionsConsumermc {
                                     theV0,
                                     lV0Tracks,
                                     lV0CosinePA);
-
     return kTRUE;
   }
 
-//~ template <typename TCOLL, typename TV0, typename TV0TRACKS>
-//~ bool processPhoton(TCOLL const &theCollision, TV0 const &theV0, TV0TRACKS const &theV0Tracks)
-//~ {
-  //~ float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+  // todo: maybe combine this with fillV0Histograms
+  template <typename TV0, typename TMCGAMMATABLE>
+  void fillTruePhotonHistograms(std::string theBAC, TV0 const &theV0, TMCGAMMATABLE const &theTrueGammaTable)
+  {
+    if (!theTrueGammaTable.size()){
+      return;
+    }
+    auto lTrueGamma = theTrueGammaTable.begin();
+    
+    // v0 resolution histos
+    {
+      // SFS todo: take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
+      TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
+      TVector3 lConvPointTrue(lTrueGamma.x(), lTrueGamma.y(), lTrueGamma.z());
 
-  //~ fillReconstructedInfoHistograms("beforeCuts/",
-                                  //~ theV0,
-                                  //~ lV0CosinePA);
-                                  
-  //~ // apply track cuts
-  //~ for (auto &lTrack : theV0Tracks){
-    //~ if (!trackPassesCuts(lTrack)) {
-      //~ return kFALSE;
-    //~ }
-  //~ }
+      std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + theBAC);
+      fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lTrueGamma.pt());
+      fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lTrueGamma.eta());
+      fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lTrueGamma.phi());
+      fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
+      fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
+    }
+    
+    // reconstructed info of MC validated V0s histos
+    {
+      std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
+      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
+      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
+    }
 
-  //~ // apply photon cuts
-  //~ if (!passesPhotonCuts(theV0, lV0CosinePA)) {
-    //~ return kFALSE;
-  //~ }
-
-  //~ fillReconstructedInfoHistograms("afterCuts/",
-                                  //~ theV0,
-                                  //~ lV0CosinePA);
-
-  //~ return kTRUE;
-//~ }
-
-//~ template <typename TV0, typename TTRACK, typename TMC>
-//~ void processTruePhoton(std::string theBAC, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, const TMC& theMcParticles)
-//~ {
-  //~ // todo: verify it is enough to check only mother0 being equal
-
-  //~ /* example from https://aliceo2group.github.io/analysis-framework/docs/tutorials/indexTables.html?highlight=_as:
-   //~ * track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0
-   //~ */
-
-  // use & here?
-  //~ auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles_001>();
-  //~ auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles_001>();
-
-  //~ //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-  //~ std::vector<int> lMothers;
-  //~ for (auto& mP : lMcPos.template mothers_as<aod::McParticles_001>()) {
-    //~ LOGF(info, "   mother index mP: %d", mP.globalIndex());
-    //~ lMothers.push_back(mP.globalIndex());
-  //~ }
-
-  //~ if (lMothers.size() > 0) {
-    //~ for (auto& mN : lMcNeg.template mothers_as<aod::McParticles_001>()) {
-      //~ LOGF(info, "   mother index mN: %d", mN.globalIndex());
-      //~ lMothers.push_back(mN.globalIndex());
-    //~ }
-  //~ }
-
-  //~ // SFS verify theyre all the same category and remove
-  //~ int lSame = 0;
-  //~ {
-    //~ if (lMothers.size() == 2) {
-      //~ if (lMothers[0] == lMothers[1]) {
-        //~ LOGF(info, "size2: 01");
-        //~ lSame = 1;
-      //~ }
-    //~ }
-
-    //~ if (lMothers.size() == 3) {
-      //~ if (lMothers[0] == lMothers[1]) {
-        //~ LOGF(info, "size3: 01");
-        //~ lSame = 2;
-      //~ }
-      //~ if (lMothers[0] == lMothers[2]) {
-        //~ LOGF(info, "size2: 02");
-        //~ lSame = 3;
-      //~ }
-      //~ if (lMothers[1] == lMothers[2]) {
-        //~ LOGF(info, "size2: 12");
-        //~ lSame = 4;
-      //~ }
-    //~ }
-
-    //~ if (lMothers.size() == 4) {
-      //~ if (lMothers[0] == lMothers[2]) {
-        //~ LOGF(info, "size4 02");
-        //~ lSame = 4;
-      //~ }
-      //~ if (lMothers[1] == lMothers[3]) {
-        //~ LOGF(info, "size4 13");
-        //~ lSame = 5;
-      //~ }
-      //~ if (lMothers[0] == lMothers[3]) {
-        //~ LOGF(info, "size4 03");
-        //~ lSame = 6;
-      //~ }
-      //~ if (lMothers[1] == lMothers[2]) {
-        //~ LOGF(info, "size4 12");
-        //~ lSame = 7;
-      //~ }
-      //~ if (lMothers[0] == lMothers[1]) {
-        //~ LOGF(info, "size4 01");
-        //~ lSame = 8;
-      //~ }
-      //~ if (lMothers[2] == lMothers[3]) {
-        //~ LOGF(info, "size4 23");
-        //~ lSame = 9;
-      //~ }
-    //~ }
-  //~ }
-
-  //~ if (lSame) {
-
-    //~ // SFS todo: actually no loop required here, for this
-    //~ for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
-
-      //~ if (lMother.pdgCode() == 22) {
-        //~ // v0 resolution histos
-        //~ {
-          //~ // SFS todo: take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
-          //~ TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-          //~ TVector3 lPosTrackVtxMC(theTrackPos.template mcParticle_as<aod::McParticles_001>().vx(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vy(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vz());
-  
-          //~ std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + theBAC);
-          //~ fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lMother.pt());
-          //~ fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lMother.eta());
-          //~ fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lMother.phi());
-          //~ fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lPosTrackVtxMC.Perp());
-          //~ fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lPosTrackVtxMC).Mag());
-        //~ }
-
-        //~ // reconstructed info of MC validated V0s histos
-        //~ {
-          //~ std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
-          //~ fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
-          //~ fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
-        //~ }
-
-        //~ // v0 MCInfoOnly histos
-        //~ {
-          //~ std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
-          //~ fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lMother.pt());
-        //~ }
-      //~ }
-    //~ }
-  //~ }
-//~ }
+    // v0 MCInfoOnly histos
+    {
+      std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
+      fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lTrueGamma.pt());
+    }
+  }
 
   void process(aod::Collisions::iterator  const& theCollision,
                aod::V0Datas               const& theV0s,
@@ -467,28 +347,21 @@ struct GammaConversionsConsumermc {
                aod::GammaConversionsInfoTrue const& theV0sTrue)
   {
     for (auto& lV0 : theV0s) {
+      auto lConvPhotonMCTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       
-      
-      //~ auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
-      //~ auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
-
-      //~ processTruePhoton("beforeCuts/",
-                        //~ lV0,
-                          //~ lTrackPos,
-                        //~ lTrackNeg,
-                        //~ theMcParticles);
+      fillTruePhotonHistograms("beforeCuts/",
+                               lV0,
+                               lConvPhotonMCTable);
 
       if (!processPhoton(theCollision, lV0, theV0Tracks)) {
         continue;
       }
-      //~ processTruePhoton("afterCuts/",
-                        //~ lV0,
-                        //~ lTrackPos,
-                        //~ lTrackNeg,
-                        //~ theMcParticles);
+      
+      fillTruePhotonHistograms("beforeCuts/",
+                               lV0,
+                               lConvPhotonMCTable);
     }
   }
-
 
   template <typename T>
   std::shared_ptr<T> getTH(std::map<std::string, HistPtr> const& theMap, std::string const& theName)
@@ -558,16 +431,16 @@ struct GammaConversionsConsumermc {
   bool trackPassesCuts(const T& theTrack)
   {
     // single track eta cut
-    //~ if (TMath::Abs(theTrack.eta()) > fEtaCut) {
-      //~ fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
-      //~ return kFALSE;
-    //~ }
+    if (TMath::Abs(theTrack.eta()) > fEtaCut) {
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
+      return kFALSE;
+    }
 
-    //~ // single track pt cut
-    //~ if (theTrack.pt() < fSinglePtCut) {
-      //~ fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
-      //~ return kFALSE;
-    //~ }
+    // single track pt cut
+    if (theTrack.pt() < fSinglePtCut) {
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
+      return kFALSE;
+    }
 
     if (!(selectionPIDTPC_track(theTrack))) {
       return kFALSE;

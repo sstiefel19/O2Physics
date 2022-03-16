@@ -23,10 +23,11 @@
 #include "Common/DataModel/StrangenessTables.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h" // for BigTracks
 
-#include "PWGEM/Tasks/skimmerMc.cxx" // for BigTracks
-
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTPC.h"
+
+#include "gammaTables.h"
+
 
 #include <TH1.h>
 #include <TH1F.h>
@@ -286,7 +287,8 @@ struct GammaConversionsConsumermc {
   template <typename TCOLL, typename TV0, typename TTRACKS>
   bool processPhoton(TCOLL const &theCollision, TV0 const &theV0, TTRACKS const &theV0Tracks)
   {
-    auto lV0Tracks = theV0Tracks.sliceBy(aod::v0data::v0Id, theV0.globalIndex());
+    //~ lV0IdInt = (int) theV0.v0()
+    auto lV0Tracks = theV0Tracks.sliceBy(aod::v0data::v0Id, theV0.v0Id());
     
     float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
     

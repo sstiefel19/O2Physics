@@ -27,6 +27,8 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTPC.h"
 
+#include "gammaTables.h"
+
 //~ #include <iostream>
 
 using namespace o2;
@@ -36,46 +38,6 @@ using namespace o2::framework::expressions;
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
-namespace o2::aod
-{
-
-namespace gammatrackreco
-{
-DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);
-DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
-DECLARE_SOA_COLUMN(IsFromConversionPhoton, isFromConversionPhoton, bool);
-}
-
-DECLARE_SOA_TABLE(GammaConversionTracks, "AOD", "V0TRACKS",
-                  o2::soa::Index<>,
-                  v0data::V0Id,
-                  gammatrackreco::IsFromConversionPhoton,
-                  gammatrackreco::TpcFoundOverFindableCls,
-                  gammatrackreco::TpcCrossedRowsOverFindableCls,
-                  track::P,
-                  track::TPCSignal,
-                  pidtpc::TPCNSigmaEl,
-                  pidtpc::TPCNSigmaPi);
-
-namespace gammamctrue
-{
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-} // gammamctrue
-
-// SFS todo: need to add some sort of indexing here to get from recos to true table
-DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
-                  o2::soa::Index<>,
-                  v0data::V0Id,
-                  v0data::X, 
-                  v0data::Y, 
-                  v0data::Z,
-                  gammamctrue::Eta,
-                  gammamctrue::Phi,
-                  gammamctrue::Pt,
-                  v0data::V0Radius<v0data::X, v0data::Y>);
-} // namespace o2::aod
 
 struct SkimmerMc {
   // ============================ DEFINITION OF CUT VARIABLES =============================================
@@ -83,8 +45,8 @@ struct SkimmerMc {
   // ============================ DEFINITION OF HISTOGRAMS ================================================
     
   // ============================ TABLES TO WRITTEN TO AO2D.root ==========================================
-  Produces<aod::GammaConversionsInfoTrue> fFuncTableV0InfoTrue;
   Produces<aod::GammaConversionTracks> fFuncTableGammaTracks;
+  Produces<aod::GammaConversionsInfoTrue> fFuncTableV0InfoTrue;
   
   // ============================ FUNCTION DEFINITIONS ====================================================
   void process(aod::Collisions::iterator  const &theCollision,
@@ -95,7 +57,8 @@ struct SkimmerMc {
   {
     auto fillTrackTable = [&](auto &theV0, auto &theTrack, bool theIsFromConversionPhoton){
       fFuncTableGammaTracks(
-        theV0.v0(),
+        //~ theV0.v0(),
+        theV0.v0Id(),
         theIsFromConversionPhoton,
         theTrack.tpcFoundOverFindableCls(),
         theTrack.tpcCrossedRowsOverFindableCls(),
@@ -105,10 +68,15 @@ struct SkimmerMc {
         theTrack.tpcNSigmaPi());
     };
     
+    
     for (auto& lV0 : theV0s) {
 
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter    
+      
+      LOGF(debug, "SFS %d %d %d", lV0.globalIndex(), lV0.v0Id());
+      //~ LOGF(INFO, "%d", theV0.v0Index());
+      
       
       bool lIsConversionPhoton = isConversionPhoton(lV0,
                                                     lTrackPos,

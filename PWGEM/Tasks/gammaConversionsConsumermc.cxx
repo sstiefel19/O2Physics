@@ -313,6 +313,19 @@ struct GammaConversionsConsumermc {
     }
     auto lTrueGamma = theTrueGammaTable.begin();
     
+    // v0 MCInfoOnly histos
+    {
+      std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
+      fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lTrueGamma.pt());
+    }
+    
+    // reconstructed info of MC validated V0s histos
+    {
+      std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
+      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
+      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
+    }
+    
     // v0 resolution histos
     {
       TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
@@ -326,18 +339,9 @@ struct GammaConversionsConsumermc {
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
     }
     
-    // reconstructed info of MC validated V0s histos
-    {
-      std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
-      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
-      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
-    }
+    
 
-    // v0 MCInfoOnly histos
-    {
-      std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
-      fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lTrueGamma.pt());
-    }
+    
   }
 /*
 template <typename TV0>

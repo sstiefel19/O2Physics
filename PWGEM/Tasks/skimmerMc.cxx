@@ -52,9 +52,10 @@ struct SkimmerMc {
                tracksAndTPCInfoMC         const &theTracks,
                aod::McParticles           const &theMcParticles)
   {
-    auto fillTrackTable = [&](auto &theV0, auto &theTrack, bool theIsFromConversionPhoton){
+    auto fillTrackTable = [&](auto &theV0, auto &theTrack, bool theIsPositive, bool theIsFromConversionPhoton){
       fFuncTableGammaTracks(
         theV0.v0Id(),
+        theIsPositive,
         theIsFromConversionPhoton,
         theTrack.tpcFoundOverFindableCls(),
         theTrack.tpcCrossedRowsOverFindableCls(),
@@ -76,8 +77,8 @@ struct SkimmerMc {
                                                     lTrackNeg,
                                                     theMcParticles);
     
-      fillTrackTable(lV0, lTrackPos, lIsConversionPhoton);
-      fillTrackTable(lV0, lTrackNeg, lIsConversionPhoton);
+      fillTrackTable(lV0, lTrackPos, true, lIsConversionPhoton);
+      fillTrackTable(lV0, lTrackNeg, false, lIsConversionPhoton);
     }
   }
 
@@ -169,11 +170,12 @@ struct SkimmerMc {
 
         if ((result = lMother.pdgCode()==22)) {
           fFuncTableV0InfoTrue(
-            theV0.v0(),
-            lMcPos.vx(),
-            lMcPos.vy(), 
-            lMcPos.vz(),
+            theV0.v0Id(),
+            lMcPos.vx(), lMcPos.vy(), lMcPos.vz(),
+            lMcPos.px(), lMcPos.py(), lMcPos.pz(),
+            lMcNeg.px(), lMcNeg.py(), lMcNeg.pz(),
             lMother.eta(),
+            lMother.p(),
             lMother.phi(),
             lMother.pt());
         }

@@ -315,7 +315,6 @@ struct GammaConversionsConsumermc {
     
     // v0 resolution histos
     {
-      // SFS todo: take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
       TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
       TVector3 lConvPointTrue(lTrueGamma.x(), lTrueGamma.y(), lTrueGamma.z());
 
@@ -340,15 +339,27 @@ struct GammaConversionsConsumermc {
       fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lTrueGamma.pt());
     }
   }
-
+/*
+template <typename TV0>
+void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0CosinePA)
+{
+  fillTH1(fV0Histos, theHistoPath + "hPtRec", theV0.pt());
+  fillTH1(fV0Histos, theHistoPath + "hEtaRec", theV0.eta());
+  fillTH1(fV0Histos, theHistoPath + "hPhiRec", theV0.phi());
+  fillTH1(fV0Histos, theHistoPath + "hConvPointR", theV0.v0radius());
+  fillTH1(fV0Histos, theHistoPath + "hCosPAngle", theV0CosinePA);
+  fillTH2(fV0Histos, theHistoPath + "hArmenteros", theV0.alpha(), theV0.qtarm());
+  fillTH2(fV0Histos, theHistoPath + "hPsiPtRec", theV0.psipair(), theV0.pt());
+}
+* */
   void process(aod::Collisions::iterator  const& theCollision,
                aod::V0Datas               const& theV0s,
                aod::GammaConversionTracks const& theV0Tracks,
                aod::GammaConversionsInfoTrue const& theV0sTrue)
   {
     for (auto& lV0 : theV0s) {
-      auto lConvPhotonMCTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       
+      auto lConvPhotonMCTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       fillTruePhotonHistograms("beforeCuts/",
                                lV0,
                                lConvPhotonMCTable);
@@ -357,7 +368,7 @@ struct GammaConversionsConsumermc {
         continue;
       }
       
-      fillTruePhotonHistograms("beforeCuts/",
+      fillTruePhotonHistograms("afterCuts/",
                                lV0,
                                lConvPhotonMCTable);
     }

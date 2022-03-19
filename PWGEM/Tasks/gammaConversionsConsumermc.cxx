@@ -21,6 +21,7 @@
 #include "Common/DataModel/Centrality.h"
 // todo: probably move somewhere else
 #include "gammaTables.h"
+#include "range.hpp"
 
 #include <TH1.h>
 #include <TH1F.h>
@@ -121,12 +122,12 @@ struct GammaConversionsConsumermc {
 
   // v0 histograms
   std::vector<MyHistogramSpec> fV0HistoDefinitions{
-    {"hPtRec", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
-    {"hEtaRec", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
-    {"hPhiRec", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
+    {"hPt", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
+    {"hEta", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
+    {"hPhi", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
     {"hConvPointR", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
     {"hArmenteros", {HistType::kTH2F, {{800, -1.f, 1.f}, {800, 0.f, 0.25f}}}},
-    {"hPsiPtRec", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
+    {"hPsiPt", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
     {"hCosPAngle", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
 
     {"IsPhotonSelected", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}} // only in afterCuts
@@ -152,17 +153,21 @@ struct GammaConversionsConsumermc {
   std::vector<MyHistogramSpec> fV0MCInfoOnlyHistoDefinitions{
     {"hValidatedPtTrue", {HistType::kTH1F, {{800, -0.0f, 25.f}}}},
   };
-
-  std::map<std::string, HistPtr> fTrackHistos;
-  std::map<std::string, HistPtr> fV0Histos;
-  std::map<std::string, HistPtr> fV0ResolutionHistos;
-  std::map<std::string, HistPtr> fV0ReconstructedInfoMCValidatedHistos;
-  std::map<std::string, HistPtr> fV0MCInfoOnlyHistos;
+  
+  typedef std::map<std::string, HistPtr> mapStringHistPtr;
+  mapStringHistPtr fTrackHistos;
+  mapStringHistPtr fV0ResolutionHistos;
+  mapStringHistPtr fV0ReconstructedInfoMCValidatedHistos;
+  
+  std::vector<mapStringHistPtr> fRecTrueV0Histos{2};
+  enum eRecTrueEnum {kRec, kTrue};
+  std::vector<std::string> fRecTrueStrings{"Rec", "True"};
+        
 
   std::string fPrefixReconstructedInfoHistos{"reconstructedInformationOnly/"};
   std::string fPrefixMCInfoNeededHistos{"MCinformationNeeded/"};
 
-  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelected"};
+  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelectedRec"};
 
   std::map<std::string, size_t> fPhotonCutIndeces{
     {"kPhotonIn", 0},
@@ -202,32 +207,58 @@ struct GammaConversionsConsumermc {
         }
 
         // v0 histograms
-        {
-          std::string lPath(fPrefixReconstructedInfoHistos + "v0/" + bac);
+        //~ {
+          //~ std::string lPath(fPrefixReconstructedInfoHistos + "v0/" + bac);
+          //~ for (auto tHisto : fV0HistoDefinitions) {
+            //~ if (tHisto.name == "IsPhotonSelected" && bac == "beforeCuts/") {
+              //~ continue;
+            //~ }
+            //~ std::string lFullName(lPath + tHisto.name);
+                        //~ LOGF(debug, "adding %s", lFullName);
+
+            //~ fV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+          //~ }
+        //~ }
+      }
+      
+      { 
+        std::vector<eRecTrueEnum> lRecTrue{kRec, kTrue};
+        std::vector<std::string> lPaths{fPrefixReconstructedInfoHistos + "v0/" + bac , fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac};
+
+        for (auto iRecTrue : lRecTrue){
+          //~ auto const &lRecTrueStr = lRecTrueStrings[iRecTrue];
+          std::string lPath = lPaths[iRecTrue];
+          auto &lV0Histos = fRecTrueV0Histos[iRecTrue];
+          
           for (auto tHisto : fV0HistoDefinitions) {
-            if (tHisto.name == "IsPhotonSelected" && bac == "beforeCuts/") {
+            
+            if (tHisto.name == "IsPhotonSelected" && ((iRecTrue == kTrue) || bac == "beforeCuts/")) {
               continue;
             }
-            std::string lFullName(lPath + tHisto.name);
-                        LOGF(debug, "adding %s", lFullName);
+            
+            std::string lFullName(lPath + tHisto.name + fRecTrueStrings[iRecTrue]);
+            LOGF(debug, "adding %s", lFullName);
+            LOGF(warning, "adding %s", lFullName); // todo remove this
 
-            fV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+
+            lV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
           }
         }
       }
+      
 
       // MC information histos
       {
-        // v0 Resolution histos
-        {
-          std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + bac);
-          for (auto tHisto : fV0ResolutionHistoDefinitions) {
-            std::string lFullName(lPath + tHisto.name);
-            LOGF(debug, "adding %s", lFullName);
-            fV0ResolutionHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-          }
-        }
-
+        // v0 Info only histos
+        //~ {
+          //~ std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac);
+          //~ for (auto tHisto : fV0MCInfoOnlyHistoDefinitions) {
+            //~ std::string lFullName(lPath + tHisto.name);
+            //~ LOGF(debug, "adding %s", lFullName);
+            //~ fV0MCInfoOnlyHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+          //~ }
+        //~ }
+        
         // reconstructed info of MC validated V0s histos
         {
           {
@@ -239,14 +270,14 @@ struct GammaConversionsConsumermc {
             }
           }
         }
-
-        // v0 Info only histos
+        
+        // v0 Resolution histos
         {
-          std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac);
-          for (auto tHisto : fV0MCInfoOnlyHistoDefinitions) {
+          std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + bac);
+          for (auto tHisto : fV0ResolutionHistoDefinitions) {
             std::string lFullName(lPath + tHisto.name);
             LOGF(debug, "adding %s", lFullName);
-            fV0MCInfoOnlyHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+            fV0ResolutionHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
           }
         }
       }
@@ -254,8 +285,8 @@ struct GammaConversionsConsumermc {
 
     {
       // do some labeling
-      auto lIsPhotonSelectedHisto = fV0Histos.find(fFullNameIsPhotonSelectedHisto);
-      if (lIsPhotonSelectedHisto != fV0Histos.end()) {
+      auto lIsPhotonSelectedHisto = fRecTrueV0Histos[kRec].find(fFullNameIsPhotonSelectedHisto);
+      if (lIsPhotonSelectedHisto != fRecTrueV0Histos[kRec].end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lIsPhotonSelectedHisto->second)->GetXaxis();
         for (auto& lPairIt : fPhotonCutIndeces) {
           lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
@@ -316,7 +347,10 @@ struct GammaConversionsConsumermc {
     // v0 MCInfoOnly histos
     {
       std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
-      fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lTrueGamma.pt());
+      //~ fillTH1(fRecTrueV0Histos[kTrue], lPath + "hValidatedPtTrue", lTrueGamma.pt());
+      fillV0Histograms(kTrue, lPath, lTrueGamma, nullptr);
+      //~ fillV0Histograms(kRec, fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, theV0CosinePA);
+
     }
     
     // reconstructed info of MC validated V0s histos
@@ -379,7 +413,7 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   }
 
   template <typename T>
-  std::shared_ptr<T> getTH(std::map<std::string, HistPtr> const& theMap, std::string const& theName)
+  std::shared_ptr<T> getTH(mapStringHistPtr const& theMap, std::string const& theName)
   {
     auto lPairIt = theMap.find(theName);
     if (lPairIt == theMap.end()) {
@@ -398,7 +432,7 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
     return lHisto;
   }
 
-  void fillTH1(std::map<std::string, HistPtr> const& theMap, std::string const& theName, float theValue)
+  void fillTH1(mapStringHistPtr const& theMap, std::string const& theName, float theValue)
   {
     std::shared_ptr<TH1> lHisto = getTH<TH1>(theMap, theName);
     if (lHisto != nullptr) {
@@ -406,7 +440,7 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
     }
   }
 
-  void fillTH2(std::map<std::string, HistPtr> const& theMap, std::string const& theName, float theValueX, float theValueY)
+  void fillTH2(mapStringHistPtr const& theMap, std::string const& theName, float theValueX, float theValueY)
   {
     std::shared_ptr<TH2> lHisto = getTH<TH2>(theMap, theName);
     if (lHisto != nullptr) {
@@ -430,16 +464,21 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
     }
   }
 
+  //todo: turn this into a function with a switch to fill either true or rec
   template <typename TV0>
-  void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0CosinePA)
+  void fillV0Histograms(eRecTrueEnum theRecTrue, std::string theHistoPath, TV0 const &theV0, float const *theV0CosinePA)
   {
-    fillTH1(fV0Histos, theHistoPath + "hPtRec", theV0.pt());
-    fillTH1(fV0Histos, theHistoPath + "hEtaRec", theV0.eta());
-    fillTH1(fV0Histos, theHistoPath + "hPhiRec", theV0.phi());
-    fillTH1(fV0Histos, theHistoPath + "hConvPointR", theV0.v0radius());
-    fillTH1(fV0Histos, theHistoPath + "hCosPAngle", theV0CosinePA);
-    fillTH2(fV0Histos, theHistoPath + "hArmenteros", theV0.alpha(), theV0.qtarm());
-    fillTH2(fV0Histos, theHistoPath + "hPsiPtRec", theV0.psipair(), theV0.pt());
+    
+    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hEta" + fRecTrueStrings[theRecTrue], theV0.eta());
+    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hPhi" + fRecTrueStrings[theRecTrue], theV0.phi());
+    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hPt"  + fRecTrueStrings[theRecTrue], theV0.pt());
+    
+    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hConvPointR" + fRecTrueStrings[theRecTrue], theV0.v0radius());
+    if (theV0CosinePA){
+      fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hCosPAngle"  + fRecTrueStrings[theRecTrue], *theV0CosinePA);
+    }
+    fillTH2(fRecTrueV0Histos[theRecTrue], theHistoPath + "hArmenteros" + fRecTrueStrings[theRecTrue], theV0.alpha(), theV0.qtarm());
+    fillTH2(fRecTrueV0Histos[theRecTrue], theHistoPath + "hPsiPt" + fRecTrueStrings[theRecTrue], theV0.psipair(), theV0.pt());
   }
 
   template <typename T>
@@ -447,13 +486,13 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   {
     // single track eta cut
     if (TMath::Abs(theTrack.eta()) > fEtaCut) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
       return kFALSE;
     }
 
     // single track pt cut
     if (theTrack.pt() < fSinglePtCut) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
       return kFALSE;
     }
 
@@ -462,12 +501,12 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
     }
 
     if (theTrack.tpcFoundOverFindableCls() < fMinTPCFoundOverFindableCls) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCFoundOverFindableCls"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCFoundOverFindableCls"));
       return kFALSE;
     }
 
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCCrossedRowsOverFindableCls"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCCrossedRowsOverFindableCls"));
       return kFALSE;
     }
 
@@ -478,22 +517,22 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   bool passesPhotonCuts(const T& theV0, float theV0CosinePA)
   {
     if (theV0.v0radius() < fMinR || theV0.v0radius() > fMaxR) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
       return kFALSE;
     }
 
     if (!ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kArmenteros"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kArmenteros"));
       return kFALSE;
     }
 
     if (TMath::Abs(theV0.psipair()) > fPsiPairCut) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
       return kFALSE;
     }
 
     if (theV0CosinePA < fCosPAngleCut) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
       return kFALSE;
     }
 
@@ -501,15 +540,15 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   }
 
   template <typename TV0, typename TTRACKS>
-  void fillReconstructedInfoHistograms(std::string theBAC, TV0 const &theV0, TTRACKS const &theV0Tracks, float theV0CosinePA)
+  void fillReconstructedInfoHistograms(std::string theBAC, TV0 const &theV0, TTRACKS const &theV0Tracks, float const &theV0CosinePA)
   {
     fillTrackHistograms(fPrefixReconstructedInfoHistos + "track/" + theBAC, theV0Tracks);
-    fillV0Histograms(fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, theV0CosinePA);
+    fillV0Histograms(kRec, fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, &theV0CosinePA);
 
     if (theBAC == "beforeCuts/") {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));
     } else if (theBAC == "afterCuts/") {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonOut"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonOut"));
     }
   }
 
@@ -531,7 +570,7 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   {
     // TPC Electron Line
     if (theTrack.tpcNSigmaEl() < fPIDnSigmaBelowElectronLine || theTrack.tpcNSigmaEl() > fPIDnSigmaAboveElectronLine) {
-      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
       return kFALSE;
     }
 
@@ -540,14 +579,14 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
       // low pt Pion rej
       if (theTrack.p() < fPIDMaxPnSigmaAbovePionLine) {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaBelowElectronLine && theTrack.tpcNSigmaEl() < fPIDnSigmaAboveElectronLine && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLine) {
-          fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
+          fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaBelowElectronLine && theTrack.tpcNSigmaEl() < fPIDnSigmaAboveElectronLine && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighP) {
-          fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
+          fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
           return kFALSE;
         }
       }

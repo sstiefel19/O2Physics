@@ -21,7 +21,6 @@
 #include "Common/DataModel/Centrality.h"
 // todo: probably move somewhere else
 #include "gammaTables.h"
-#include "range.hpp"
 
 #include <TH1.h>
 #include <TH1F.h>
@@ -159,13 +158,18 @@ struct GammaConversionsConsumermc {
   mapStringHistPtr fV0ResolutionHistos;
   mapStringHistPtr fV0ReconstructedInfoMCValidatedHistos;
   
-  std::vector<mapStringHistPtr> fRecTrueV0Histos{2};
   enum eRecTrueEnum {kRec, kTrue};
+  std::vector<mapStringHistPtr> fRecTrueV0Histos{2};
   std::vector<std::string> fRecTrueStrings{"Rec", "True"};
         
-
   std::string fPrefixReconstructedInfoHistos{"reconstructedInformationOnly/"};
+  std::string fPrefixReconstructedTrackHistos{fPrefixReconstructedInfoHistos + "track/"};
+  
   std::string fPrefixMCInfoNeededHistos{"MCinformationNeeded/"};
+  
+  std::vector<std::string> fPrefixesV0HistosRecTrue{fPrefixReconstructedInfoHistos + "v0/", fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/"};
+  std::string fPrefixResolutions{fPrefixMCInfoNeededHistos + "v0/resolutions/"};
+  std::string fPrefixReconstructedInfoOfTrue{fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/"};
 
   std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelectedRec"};
 
@@ -192,94 +196,46 @@ struct GammaConversionsConsumermc {
 
   void init(InitContext const&)
   {
+    auto addHistosToRegistry = [&](auto &theContainer, auto const &theHistoDefinitions,  std::string const &thePath, std::string *theSuffix = nullptr, bool theSkipIsPhotonSelected = false){
+      
+      for (auto& tHisto : theHistoDefinitions) {
+        if (theSkipIsPhotonSelected && tHisto.name == "IsPhotonSelected") {
+            continue;
+        }
+        std::string lFullName(thePath + tHisto.name + (theSuffix ? *theSuffix : std::string("")));
+        LOGF(debug, "adding %s", lFullName);
+        theContainer.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+      }
+    };
+    
     for (auto bac : std::vector<std::string>{"beforeCuts/", "afterCuts/"}) {
       
-      // reconstructed data histograms
+      // track histograms
       {
-        // track histograms
-        {
-          std::string lPath(fPrefixReconstructedInfoHistos + "track/" + bac);
-          for (auto& tHisto : fTrackHistoDefinitions) {
-            std::string lFullName(lPath + tHisto.name);
-            LOGF(debug, "adding %s", lFullName);
-            fTrackHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-          }
-        }
-
-        // v0 histograms
-        //~ {
-          //~ std::string lPath(fPrefixReconstructedInfoHistos + "v0/" + bac);
-          //~ for (auto tHisto : fV0HistoDefinitions) {
-            //~ if (tHisto.name == "IsPhotonSelected" && bac == "beforeCuts/") {
-              //~ continue;
-            //~ }
-            //~ std::string lFullName(lPath + tHisto.name);
-                        //~ LOGF(debug, "adding %s", lFullName);
-
-            //~ fV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-          //~ }
-        //~ }
+        std::string lPath(fPrefixReconstructedTrackHistos + bac);
+        addHistosToRegistry(fTrackHistos, fTrackHistoDefinitions, lPath);
       }
       
-      { 
-        std::vector<eRecTrueEnum> lRecTrue{kRec, kTrue};
-        std::vector<std::string> lPaths{fPrefixReconstructedInfoHistos + "v0/" + bac , fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac};
-
-        for (auto iRecTrue : lRecTrue){
-          //~ auto const &lRecTrueStr = lRecTrueStrings[iRecTrue];
-          std::string lPath = lPaths[iRecTrue];
-          auto &lV0Histos = fRecTrueV0Histos[iRecTrue];
-          
-          for (auto tHisto : fV0HistoDefinitions) {
-            
-            if (tHisto.name == "IsPhotonSelected" && ((iRecTrue == kTrue) || bac == "beforeCuts/")) {
-              continue;
-            }
-            
-            std::string lFullName(lPath + tHisto.name + fRecTrueStrings[iRecTrue]);
-            LOGF(debug, "adding %s", lFullName);
-            LOGF(warning, "adding %s", lFullName); // todo remove this
-
-
-            lV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-          }
+      {
+        std::vector<eRecTrueEnum> lRecTrue{kRec, kTrue};        
+        for (auto iRecTrue : lRecTrue){ 
+          std::string lPath(fPrefixesV0HistosRecTrue[iRecTrue] + bac);
+          addHistosToRegistry(fRecTrueV0Histos[iRecTrue], fV0HistoDefinitions, lPath, &fRecTrueStrings[iRecTrue], (iRecTrue == kTrue || bac == "beforeCuts/"));
         }
       }
       
-
-      // MC information histos
+      // reconstructed info of MC validated V0s histos
       {
-        // v0 Info only histos
-        //~ {
-          //~ std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac);
-          //~ for (auto tHisto : fV0MCInfoOnlyHistoDefinitions) {
-            //~ std::string lFullName(lPath + tHisto.name);
-            //~ LOGF(debug, "adding %s", lFullName);
-            //~ fV0MCInfoOnlyHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-          //~ }
-        //~ }
-        
-        // reconstructed info of MC validated V0s histos
-        {
-          {
-            std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + bac);
-            for (auto tHisto : fV0ReconstructedInfoMCValidatedHistoDefinitions) {
-              std::string lFullName(lPath + tHisto.name);
-              LOGF(debug, "adding %s", lFullName);
-              fV0ReconstructedInfoMCValidatedHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-            }
-          }
+        { 
+          std::string lPath(fPrefixReconstructedInfoOfTrue + bac);
+          addHistosToRegistry(fV0ReconstructedInfoMCValidatedHistos, fV0ReconstructedInfoMCValidatedHistoDefinitions, lPath);
         }
-        
-        // v0 Resolution histos
-        {
-          std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + bac);
-          for (auto tHisto : fV0ResolutionHistoDefinitions) {
-            std::string lFullName(lPath + tHisto.name);
-            LOGF(debug, "adding %s", lFullName);
-            fV0ResolutionHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
-          }
-        }
+      }
+      
+      // v0 Resolution histos
+      {
+        std::string lPath(fPrefixResolutions + bac);
+        addHistosToRegistry(fV0ResolutionHistos, fV0ResolutionHistoDefinitions, lPath);
       }
     }
 
@@ -346,16 +302,12 @@ struct GammaConversionsConsumermc {
     
     // v0 MCInfoOnly histos
     {
-      std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
-      //~ fillTH1(fRecTrueV0Histos[kTrue], lPath + "hValidatedPtTrue", lTrueGamma.pt());
-      fillV0Histograms(kTrue, lPath, lTrueGamma, nullptr);
-      //~ fillV0Histograms(kRec, fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, theV0CosinePA);
-
+      fillV0Histograms(kTrue, theBAC, lTrueGamma, nullptr);
     }
     
     // reconstructed info of MC validated V0s histos
     {
-      std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
+      std::string lPath(fPrefixReconstructedInfoOfTrue + theBAC);
       fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
       fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
     }
@@ -365,31 +317,15 @@ struct GammaConversionsConsumermc {
       TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
       TVector3 lConvPointTrue(lTrueGamma.x(), lTrueGamma.y(), lTrueGamma.z());
 
-      std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + theBAC);
+      std::string lPath(fPrefixResolutions + theBAC);
       fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lTrueGamma.pt());
       fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lTrueGamma.eta());
       fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lTrueGamma.phi());
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
     }
-    
-    
-
-    
   }
-/*
-template <typename TV0>
-void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0CosinePA)
-{
-  fillTH1(fV0Histos, theHistoPath + "hPtRec", theV0.pt());
-  fillTH1(fV0Histos, theHistoPath + "hEtaRec", theV0.eta());
-  fillTH1(fV0Histos, theHistoPath + "hPhiRec", theV0.phi());
-  fillTH1(fV0Histos, theHistoPath + "hConvPointR", theV0.v0radius());
-  fillTH1(fV0Histos, theHistoPath + "hCosPAngle", theV0CosinePA);
-  fillTH2(fV0Histos, theHistoPath + "hArmenteros", theV0.alpha(), theV0.qtarm());
-  fillTH2(fV0Histos, theHistoPath + "hPsiPtRec", theV0.psipair(), theV0.pt());
-}
-* */
+
   void process(aod::Collisions::iterator  const& theCollision,
                aod::V0Datas               const& theV0s,
                aod::GammaConversionTracks const& theV0Tracks,
@@ -449,14 +385,15 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   }
 
   template <typename TTRACKS>
-  void fillTrackHistograms(std::string theHistoPath, TTRACKS const &theV0Tracks)
+  void fillTrackHistograms(std::string const &theBAC, TTRACKS const &theV0Tracks)
   {
+    std::string lPath = fPrefixReconstructedTrackHistos + theBAC;
     auto fillTrackHistogramsI = [&](auto const &theTrack) {
-      fillTH1(fTrackHistos, theHistoPath + "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
-      fillTH1(fTrackHistos, theHistoPath + "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
-      fillTH2(fTrackHistos, theHistoPath + "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
-      fillTH2(fTrackHistos, theHistoPath + "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
-      fillTH2(fTrackHistos, theHistoPath + "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
+      fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
+      fillTH1(fTrackHistos, lPath + "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
     };
     
     for (auto &lTrack : theV0Tracks){
@@ -466,19 +403,19 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
 
   //todo: turn this into a function with a switch to fill either true or rec
   template <typename TV0>
-  void fillV0Histograms(eRecTrueEnum theRecTrue, std::string theHistoPath, TV0 const &theV0, float const *theV0CosinePA)
+  void fillV0Histograms(eRecTrueEnum theRecTrue, std::string const &theBAC, TV0 const &theV0, float const *theV0CosinePA)
   {
+    std::string lPath = fPrefixesV0HistosRecTrue[theRecTrue] + theBAC;
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hEta" + fRecTrueStrings[theRecTrue], theV0.eta());
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPhi" + fRecTrueStrings[theRecTrue], theV0.phi());
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPt"  + fRecTrueStrings[theRecTrue], theV0.pt());
     
-    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hEta" + fRecTrueStrings[theRecTrue], theV0.eta());
-    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hPhi" + fRecTrueStrings[theRecTrue], theV0.phi());
-    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hPt"  + fRecTrueStrings[theRecTrue], theV0.pt());
-    
-    fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hConvPointR" + fRecTrueStrings[theRecTrue], theV0.v0radius());
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hConvPointR" + fRecTrueStrings[theRecTrue], theV0.v0radius());
     if (theV0CosinePA){
-      fillTH1(fRecTrueV0Histos[theRecTrue], theHistoPath + "hCosPAngle"  + fRecTrueStrings[theRecTrue], *theV0CosinePA);
+      fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hCosPAngle"  + fRecTrueStrings[theRecTrue], *theV0CosinePA);
     }
-    fillTH2(fRecTrueV0Histos[theRecTrue], theHistoPath + "hArmenteros" + fRecTrueStrings[theRecTrue], theV0.alpha(), theV0.qtarm());
-    fillTH2(fRecTrueV0Histos[theRecTrue], theHistoPath + "hPsiPt" + fRecTrueStrings[theRecTrue], theV0.psipair(), theV0.pt());
+    fillTH2(fRecTrueV0Histos[theRecTrue], lPath + "hArmenteros" + fRecTrueStrings[theRecTrue], theV0.alpha(), theV0.qtarm());
+    fillTH2(fRecTrueV0Histos[theRecTrue], lPath + "hPsiPt" + fRecTrueStrings[theRecTrue], theV0.psipair(), theV0.pt());
   }
 
   template <typename T>
@@ -542,8 +479,8 @@ void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0Cos
   template <typename TV0, typename TTRACKS>
   void fillReconstructedInfoHistograms(std::string theBAC, TV0 const &theV0, TTRACKS const &theV0Tracks, float const &theV0CosinePA)
   {
-    fillTrackHistograms(fPrefixReconstructedInfoHistos + "track/" + theBAC, theV0Tracks);
-    fillV0Histograms(kRec, fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, &theV0CosinePA);
+    fillTrackHistograms(theBAC, theV0Tracks);
+    fillV0Histograms(kRec, theBAC, theV0, &theV0CosinePA);
 
     if (theBAC == "beforeCuts/") {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));

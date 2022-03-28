@@ -1,6 +1,8 @@
 #include "Framework/AnalysisDataModel.h"
 
 #include "Common/DataModel/StrangenessTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTPC.h"
@@ -15,6 +17,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, TpcNClsCrossedRows, float);
 DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);
 DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(IsFromConversionPhoton, isFromConversionPhoton, bool);
@@ -31,6 +34,8 @@ DECLARE_SOA_TABLE(GammaConversionTracks, "AOD", "V0TRACKS",
                   gammatrackreco::P,
                   gammatrackreco::Phi,
                   gammatrackreco::Pt,
+                  track::DcaXY,
+                  gammatrackreco::TPCNClsCrossedRows,
                   track::TPCSignal,
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCNSigmaPi);

@@ -1,0 +1,26 @@
+{
+  "OutputDirector": {
+    "debugmode": true,
+    "resfile": "V0tables",
+    "resfilemode": "RECREATE",
+    "ntfmerge": 1,
+    "OutputDescriptors": [
+      {
+        "table": "AOD/COLLISION/0"
+      },
+      {
+        "table": "AOD/V0DATA/0"
+      },
+      {
+        "table": "AOD/V0DATAEXT/0"
+      },
+      {
+        "table": "AOD/V0TRACKS/0"
+      },
+      {
+        "table": "AOD/V0INFOTRUE/0"
+      }
+    ]
+  }
+}
+

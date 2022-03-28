@@ -9,10 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \brief write relevant information for photon conversion analysis to AO2D.root file. This file is then to the used as the only input to perform
-/// the actual pcm analysis.
+/// \brief write relevant information for photon conversion analysis to an AO2D.root file. This file is then the only necessary input to perform
+/// pcm analysis.
 /// dependencies: o2-analysis-lf-lambdakzerobuilder
 /// \author stephan.friedrich.stiefelmaier@cern.ch
+
+// runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
+
+// todo: remove reduantant information in GammaConversionsInfoTrue
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -34,14 +38,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 struct SkimmerMc {
-  // ============================ DEFINITION OF CUT VARIABLES =============================================
-  
-  // ============================ DEFINITION OF HISTOGRAMS ================================================
-    
-  // ============================ TABLES TO WRITTEN TO AO2D.root ==========================================
+
   Produces<aod::GammaConversionTracks> fFuncTableGammaTracks;
   Produces<aod::GammaConversionsInfoTrue> fFuncTableV0InfoTrue;
   
@@ -63,6 +63,8 @@ struct SkimmerMc {
         theTrack.p(),
         theTrack.phi(),
         theTrack.pt(),
+        theTrack.dcaXY(),
+        theTrack.tpcNClsCrossedRows(),
         theTrack.tpcSignal(),
         theTrack.tpcNSigmaEl(),
         theTrack.tpcNSigmaPi());

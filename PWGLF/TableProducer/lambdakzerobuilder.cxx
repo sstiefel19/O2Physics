@@ -197,23 +197,23 @@ struct lambdakzeroBuilder {
       if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
-        continue;
+        //~ continue;
       }
       if (V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
-        continue;
+        //~ continue;
       }
       registry.fill(HIST("hGoodIndices"), 2.5);
       if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
-        continue;
+        //~ continue;
       }
       if (fabs(V0.negTrack_as<MyTracks>().dcaXY()) < dcanegtopv) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
-        continue;
+        //~ continue;
       }
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
       registry.fill(HIST("hGoodIndices"), 3.5);
@@ -291,21 +291,21 @@ struct lambdakzeroBuilder {
       if (fitter.getChi2AtPCACandidate() > dcav0dau) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to dca cut");
         v0dataLink(-1);
-        continue;
+        //continue;
       }
 
       auto V0CosinePA = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       if (V0CosinePA < v0cospa) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to CPA cut");
         v0dataLink(-1);
-        continue;
+        //continue;
       }
 
       auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to radius cut");
         v0dataLink(-1);
-        continue;
+        //continue;
       }
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);

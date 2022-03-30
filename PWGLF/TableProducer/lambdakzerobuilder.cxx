@@ -130,7 +130,9 @@ struct lambdakzeroBuilder {
   {
     // using namespace analysis::lambdakzerobuilder;
 
-    ccdb->setURL("https://alice-ccdb.cern.ch");
+    //ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL("localhost:8880");
+    LOGF(info, "SFS localhost");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 

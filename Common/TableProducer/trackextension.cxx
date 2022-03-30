@@ -64,7 +64,8 @@ struct TrackExtension {
   {
     using namespace analysis::trackextension;
 
-    ccdb->setURL(ccdburl);
+    //ccdb->setURL(ccdburl);
+    ccdb->setURL("localhost:8880");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 

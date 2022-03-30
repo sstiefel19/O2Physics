@@ -50,7 +50,8 @@ struct TimestampTask {
   void init(o2::framework::InitContext&)
   {
     LOGF(info, "Initializing TimestampTask");
-    ccdb->setURL(url.value); // Setting URL of CCDB manager from configuration
+    //ccdb->setURL(url.value); // Setting URL of CCDB manager from configuration
+    ccdb->setURL("localhost:8880");
     LOGF(debug, "Getting SOR orbit map from CCDB url '%s' path '%s'", url.value, start_orbit_path.value);
     mapStartOrbit = ccdb->get<std::map<int, int>>(start_orbit_path.value);
     if (!mapStartOrbit) {

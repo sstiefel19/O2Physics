@@ -19,7 +19,6 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-// todo: probably move somewhere else
 #include "gammaTables.h"
 
 #include <TH1.h>
@@ -35,81 +34,44 @@ using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 struct GammaConversionsConsumermc {
-
+  
+  // event cuts
+  /*
   Configurable<bool> fDoEventSel{"fDoEventSel", 0, "demand sel7 for events"};
-
   Configurable<float> fCentMin{"fCentMin", 0.0, "lower bound of centrality selection"};
   Configurable<float> fCentMax{"fCentMax", 100.0, "upper bound of centrality selection"};
-
-  Configurable<float> fSinglePtCut{"fSinglePtCut", 0.04, "minimum daughter track pt"};
-
-  Configurable<float> fEtaCut{"fEtaCut", 0.8, "accepted eta range"};
-
-  Configurable<float> fMinR{"fMinR", 5., "minimum conversion radius of the V0s"};
-  Configurable<float> fMaxR{"fMaxR", 180., "maximum conversion radius of the V0s"};
-
-  Configurable<float> fPIDnSigmaBelowElectronLine{"fPIDnSigmaBelowElectronLine", -3., "minimum sigma electron PID for V0 daughter tracks"};
-
-  Configurable<float> fPIDnSigmaAboveElectronLine{"fPIDnSigmaAboveElectronLine", 3., "maximum sigma electron PID for V0 daughter tracks"};
-
-  Configurable<float> fPIDnSigmaAbovePionLine{"fPIDnSigmaAbovePionLine", 3., "minimum sigma to be over the pion line for low momentum tracks"}; //case 4: 3.0sigma, 1.0 sigma at high momentum
-
-  Configurable<float> fPIDnSigmaAbovePionLineHighP{"fPIDnSigmaAbovePionLineHighP", 1., "minimum sigma to be over the pion line for high momentum tracks"};
-
-  Configurable<float> fPIDMinPnSigmaAbovePionLine{"fPIDMinPnSigmaAbovePionLine", 0.4, "minimum track momentum to apply any pion rejection"}; //case 7:  // 0.4 GeV
-
-  Configurable<float> fPIDMaxPnSigmaAbovePionLine{"fPIDMaxPnSigmaAbovePionLine", 8., "border between low and high momentum pion rejection"}; //case 7:  // 8. GeV
-
+  */
+  
+  // track cuts
+  Configurable<float> fTrackEtaMax{"fTrackEtaMax", 0.8, "accepted eta range"};
+  Configurable<float> fTrackPtMin{"fTrackPtMin", 0.04, "minimum daughter track pt"};  
+  Configurable<float> fPIDnSigmaElectronLineBelowMin{"fPIDnSigmaElectronLineBelowMin", -3., "minimum sigma electron PID for V0 daughter tracks"};
+  Configurable<float> fPIDnSigmaElectronLineAboveMax{"fPIDnSigmaElectronLineAboveMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
+  Configurable<float> fPIDPionRejectionPMin{"fPIDPionRejectionPMin", 0.4, "minimum track momentum to apply any pion rejection"}; //case 7:  // 0.4 GeV
+  Configurable<float> fPIDPionRejectionPBoarder{"fPIDPionRejectionPBoarder", 8., "border between low and high momentum pion rejection"}; //case 7:  // 8. GeV
+  Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", 3., "minimum sigma to be over the pion line for low momentum tracks"}; //case 4: 3.0sigma, 1.0 sigma at high momentum
+  Configurable<float> fPIDnSigmaAbovePionLineHighPMin{"fPIDnSigmaAbovePionLineHighPMin", 1., "minimum sigma to be over the pion line for high momentum tracks"};
   Configurable<float> fMinTPCFoundOverFindableCls{"fMinTPCNClsFoundOverFindable", 0.6, "minimum ratio found tpc clusters over findable"}; //case 9:  // 0.6
-
   Configurable<float> fMinTPCCrossedRowsOverFindableCls{"fMinTPCCrossedRowsOverFindableCls", 0.0, "minimum ratio TPC crossed rows over findable clusters"};
 
-  Configurable<float> fQtPtMax{"fQtPtMax", 0.11, "up to fQtMax, multiply the pt of the V0s by this value to get the maximum qt "};
-
-  Configurable<float> fQtMax{"fQtMax", 0.040, "maximum qt"};
-  Configurable<float> fMaxPhotonAsymmetry{"fMaxPhotonAsymmetry", 0.95, "maximum photon asymetry"};
-  Configurable<float> fPsiPairCut{"fPsiPairCut", 0.1, "maximum psi angle of the track pair"};
-
-  Configurable<float> fCosPAngleCut{"fCosPAngleCut", 0.85, "mimimum cosinus of the pointing angle"}; // case 4
-
-  // SFS todo: struct MyHistogramSpec : public HistogramSpec {
+  // V0 cuts
+  Configurable<float> fV0CosPAngleMin{"fV0CosPAngleMin", 0.85, "mimimum cosinus of the pointing angle"}; // case 4
+  Configurable<float> fV0RMin{"fV0RMin", 5., "minimum conversion radius of the V0s"};
+  Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
+  Configurable<float> fV0PhotonAsymmetryMax{"fV0PhotonAsymmetryMax", 0.95, "maximum photon asymetry"};
+  Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", 0.1, "maximum psi angle of the track pair"};
+  Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.11, "multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is  fV0QtMax."};
+  Configurable<float> fV0QtMax{"fV0QtMax", 0.040, "the maximum value of the product, that is the maximum qt"};
+  
+  // define this in order to have a constructor of the HistogramSpec which copies the name into the title
   struct MyHistogramSpec {
     MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false)
-      : name(name_),
-        hash(compile_time_hash(name_)),
-        title(title_),
-        config(config_),
-        callSumw2(callSumw2_)
-    {
-    }
-
+      : m{name_, title_, config_, callSumw2_} {}
     MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false)
-      : name(name_),
-        hash(compile_time_hash(name_)),
-        title(name_),
-        config(config_),
-        callSumw2(callSumw2_)
-    {
-    }
-
-    MyHistogramSpec()
-      : name(""),
-        hash(0),
-        config()
-    {
-    }
-    MyHistogramSpec(MyHistogramSpec const& other) = default;
-    MyHistogramSpec(MyHistogramSpec&& other) = default;
-
-    std::string name{};
-    uint32_t hash{};
-    std::string title{};
-    HistogramConfigSpec config{};
-    bool callSumw2{}; // wether or not hist needs heavy error structure produced by Sumw2()
+      : m{name_, name_, config_, callSumw2_} {}
+    HistogramSpec m{};
   };
-
-  HistogramRegistry fHistogramRegistry{"fHistogramRegistry"};
-
+  
   // track histograms
   std::vector<MyHistogramSpec> fTrackHistoDefinitions{
     {"hTPCFoundOverFindableCls", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
@@ -135,43 +97,35 @@ struct GammaConversionsConsumermc {
   // only in mc
   // resolution histos
   std::vector<MyHistogramSpec> fV0ResolutionHistoDefinitions{
-    {"hPtRes", "hPtRes_Rec-MC", {HistType::kTH1F, {{800, -0.5f, 0.5f}}}},
-    {"hEtaRes", "hEtaRes_Rec-MC", {HistType::kTH1F, {{800, -0.05f, 0.05f}}}},
-    {"hPhiRes", "hPhiRes_Rec-MC", {HistType::kTH1F, {{800, -0.05f, 0.05f}}}},
+    {"hPtRes", "hPtRes_Rec-MC", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
+    {"hEtaRes", "hEtaRes_Rec-MC", {HistType::kTH1F, {{800, -3.145f, 3.145f}}}},
+    {"hPhiRes", "hPhiRes_Rec-MC", {HistType::kTH1F, {{800, -3.145f, 3.145f}}}},
     {"hConvPointRRes", "hConvPointRRes_Rec-MC", {HistType::kTH1F, {{800, -200.f, 200.f}}}},
     {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
   };
 
-  // Reconstructed info of MC validated V0s histos fV0ReconstructedInfoMCValidatedHistos
-  std::vector<MyHistogramSpec> fV0ReconstructedInfoMCValidatedHistoDefinitions{
-    {"hValidatedPtRec", {HistType::kTH1F, {{800, 0.0f, 25.f}}}},
-    {"hValidatedRRec", {HistType::kTH1F, {{800, 0.0f, 250.f}}}},
-  };
-
-  // MC info only histos
-  std::vector<MyHistogramSpec> fV0MCInfoOnlyHistoDefinitions{
-    {"hValidatedPtTrue", {HistType::kTH1F, {{800, -0.0f, 25.f}}}},
-  };
-  
   typedef std::map<std::string, HistPtr> mapStringHistPtr;
   mapStringHistPtr fTrackHistos;
   mapStringHistPtr fV0ResolutionHistos;
-  mapStringHistPtr fV0ReconstructedInfoMCValidatedHistos;
   
-  enum eRecTrueEnum {kRec, kTrue};
-  std::vector<mapStringHistPtr> fRecTrueV0Histos{2};
-  std::vector<std::string> fRecTrueStrings{"Rec", "True"};
-        
+  enum eRecTrueEnum {kRec, kTrue, kRecVal};
+  std::vector<std::string> fRecTrueStrings{"Rec", "True", "RecVal"};
+  std::vector<mapStringHistPtr> fRecTrueV0Histos{3};
+  
   std::string fPrefixReconstructedInfoHistos{"reconstructedInformationOnly/"};
+  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelectedRec"};
   std::string fPrefixReconstructedTrackHistos{fPrefixReconstructedInfoHistos + "track/"};
   
   std::string fPrefixMCInfoNeededHistos{"MCinformationNeeded/"};
-  
-  std::vector<std::string> fPrefixesV0HistosRecTrue{fPrefixReconstructedInfoHistos + "v0/", fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/"};
-  std::string fPrefixResolutions{fPrefixMCInfoNeededHistos + "v0/resolutions/"};
   std::string fPrefixReconstructedInfoOfTrue{fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/"};
 
-  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelectedRec"};
+  std::vector<std::string> fPrefixesV0HistosRecTrue{
+    fPrefixReconstructedInfoHistos + "v0/", 
+    fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/", 
+    fPrefixReconstructedInfoOfTrue};
+  std::string fPrefixResolutions{fPrefixMCInfoNeededHistos + "v0/resolutions/"};
+  
+  HistogramRegistry fHistogramRegistry{"fHistogramRegistry"};
 
   std::map<std::string, size_t> fPhotonCutIndeces{
     {"kPhotonIn", 0},
@@ -187,56 +141,38 @@ struct GammaConversionsConsumermc {
     {"kPsiPair", 10},
     {"kCosinePA", 11},
     {"kPhotonOut", 12}};
-
-  //~ lXaxis = registry.get<TH1>(HIST("hEvents"))->GetXaxis();
-  //~ lXaxis->SetBinLabel(1, "in");
-  //~ lXaxis->SetBinLabel(2, "int7||sel7");
-  //~ lXaxis->SetBinLabel(3, "cent");
-  //~ lXaxis->SetBinLabel(4, "out");
+    
 
   void init(InitContext const&)
   {
-    auto addHistosToRegistry = [&](auto &theContainer, auto const &theHistoDefinitions,  std::string const &thePath, std::string *theSuffix = nullptr, bool theSkipIsPhotonSelected = false){
-      
+    auto addHistosToRegistry = [&](auto &theContainer, auto const &theHistoDefinitions,  std::string const &thePath, std::string *theSuffix = nullptr, bool theSkipIsPhotonSelected = false)
+    {
       for (auto& tHisto : theHistoDefinitions) {
-        if (theSkipIsPhotonSelected && tHisto.name == "IsPhotonSelected") {
+        if (theSkipIsPhotonSelected && tHisto.m.name == "IsPhotonSelected") {
             continue;
         }
-        std::string lFullName(thePath + tHisto.name + (theSuffix ? *theSuffix : std::string("")));
-        LOGF(debug, "adding %s", lFullName);
-        theContainer.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+        std::string lFullName(thePath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
+        LOGF(info, "adding %s", lFullName);
+        theContainer.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config)});
       }
     };
     
     for (auto bac : std::vector<std::string>{"beforeCuts/", "afterCuts/"}) {
-      
       // track histograms
-      {
-        std::string lPath(fPrefixReconstructedTrackHistos + bac);
-        addHistosToRegistry(fTrackHistos, fTrackHistoDefinitions, lPath);
+      addHistosToRegistry(fTrackHistos, fTrackHistoDefinitions, fPrefixReconstructedTrackHistos + bac);
+
+      // v0 histograms
+      std::vector<eRecTrueEnum> lRecTrue{kRec, kTrue, kRecVal};        
+      for (auto iRecTrue : lRecTrue){ 
+        addHistosToRegistry(fRecTrueV0Histos[iRecTrue], 
+                            fV0HistoDefinitions, 
+                            fPrefixesV0HistosRecTrue[iRecTrue] + bac, 
+                            &fRecTrueStrings[iRecTrue], 
+                            (iRecTrue != kRec || bac == "beforeCuts/"));
       }
-      
-      {
-        std::vector<eRecTrueEnum> lRecTrue{kRec, kTrue};        
-        for (auto iRecTrue : lRecTrue){ 
-          std::string lPath(fPrefixesV0HistosRecTrue[iRecTrue] + bac);
-          addHistosToRegistry(fRecTrueV0Histos[iRecTrue], fV0HistoDefinitions, lPath, &fRecTrueStrings[iRecTrue], (iRecTrue == kTrue || bac == "beforeCuts/"));
-        }
-      }
-      
-      // reconstructed info of MC validated V0s histos
-      {
-        { 
-          std::string lPath(fPrefixReconstructedInfoOfTrue + bac);
-          addHistosToRegistry(fV0ReconstructedInfoMCValidatedHistos, fV0ReconstructedInfoMCValidatedHistoDefinitions, lPath);
-        }
-      }
-      
+
       // v0 Resolution histos
-      {
-        std::string lPath(fPrefixResolutions + bac);
-        addHistosToRegistry(fV0ResolutionHistos, fV0ResolutionHistoDefinitions, lPath);
-      }
+      addHistosToRegistry(fV0ResolutionHistos, fV0ResolutionHistoDefinitions, fPrefixResolutions + bac);
     }
 
     {
@@ -262,56 +198,45 @@ struct GammaConversionsConsumermc {
     return gMax_size;
   }
 
-  template <typename TCOLL, typename TV0, typename TTRACKS>
-  bool processPhoton(TCOLL const &theCollision, TV0 const &theV0, TTRACKS const &theV0Tracks)
+  template <typename TV0, typename TTRACKS>
+  bool processPhoton(TV0 const &theV0, const float &theV0CosinePA, TTRACKS const &theTracks)
   {
-    auto lV0Tracks = theV0Tracks.sliceBy(aod::v0data::v0Id, theV0.v0Id());
-    float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
-    
+    auto lV0Tracks = theTracks.sliceBy(aod::v0data::v0Id, theV0.v0Id());
+
     fillReconstructedInfoHistograms("beforeCuts/",
                                     theV0,
                                     lV0Tracks,
-                                    lV0CosinePA);
+                                    theV0CosinePA);
                                     
-    for (auto &lTrack : theV0Tracks){
+    for (auto &lTrack : lV0Tracks){
       if (!trackPassesCuts(lTrack)) {
         return kFALSE;
       }
     }
 
     // apply photon cuts
-    if (!passesPhotonCuts(theV0, lV0CosinePA)) {
+    if (!passesPhotonCuts(theV0, theV0CosinePA)) {
       return kFALSE;
     }
-
+    
     fillReconstructedInfoHistograms("afterCuts/",
                                     theV0,
                                     lV0Tracks,
-                                    lV0CosinePA);
+                                    theV0CosinePA);
     return kTRUE;
   }
 
-  // todo: maybe combine this with fillV0Histograms
   template <typename TV0, typename TMCGAMMATABLE>
-  void fillTruePhotonHistograms(std::string theBAC, TV0 const &theV0, TMCGAMMATABLE const &theTrueGammaTable)
+  void fillTruePhotonHistograms(std::string theBAC, TV0 const &theV0, float const &theV0CosinePA, TMCGAMMATABLE const &theTrueGammaTable)
   {
     if (!theTrueGammaTable.size()){
       return;
     }
     auto lTrueGamma = theTrueGammaTable.begin();
     
-    // v0 MCInfoOnly histos
-    {
-      fillV0Histograms(kTrue, theBAC, lTrueGamma, nullptr);
-    }
-    
-    // reconstructed info of MC validated V0s histos
-    {
-      std::string lPath(fPrefixReconstructedInfoOfTrue + theBAC);
-      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
-      fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedRRec", theV0.v0radius());
-    }
-    
+    fillV0Histograms(kTrue, theBAC, lTrueGamma, nullptr);    
+    fillV0Histograms(kRecVal, theBAC, theV0, &theV0CosinePA);
+
     // v0 resolution histos
     {
       TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
@@ -328,22 +253,26 @@ struct GammaConversionsConsumermc {
 
   void process(aod::Collisions::iterator  const& theCollision,
                aod::V0Datas               const& theV0s,
-               aod::GammaConversionTracks const& theV0Tracks,
+               aod::GammaConversionTracks const& theTracks,
                aod::GammaConversionsInfoTrue const& theV0sTrue)
   {
     for (auto& lV0 : theV0s) {
       
+      float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+
       auto lConvPhotonMCTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       fillTruePhotonHistograms("beforeCuts/",
                                lV0,
+                               lV0CosinePA,
                                lConvPhotonMCTable);
 
-      if (!processPhoton(theCollision, lV0, theV0Tracks)) {
+      if (!processPhoton(lV0, lV0CosinePA, theTracks)) {
         continue;
       }
       
       fillTruePhotonHistograms("afterCuts/",
                                lV0,
+                               lV0CosinePA,
                                lConvPhotonMCTable);
     }
   }
@@ -401,7 +330,6 @@ struct GammaConversionsConsumermc {
     }
   }
 
-  //todo: turn this into a function with a switch to fill either true or rec
   template <typename TV0>
   void fillV0Histograms(eRecTrueEnum theRecTrue, std::string const &theBAC, TV0 const &theV0, float const *theV0CosinePA)
   {
@@ -422,13 +350,13 @@ struct GammaConversionsConsumermc {
   bool trackPassesCuts(const T& theTrack)
   {
     // single track eta cut
-    if (TMath::Abs(theTrack.eta()) > fEtaCut) {
+    if (TMath::Abs(theTrack.eta()) > fTrackEtaMax) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
       return kFALSE;
     }
 
     // single track pt cut
-    if (theTrack.pt() < fSinglePtCut) {
+    if (theTrack.pt() < fTrackPtMin) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
       return kFALSE;
     }
@@ -453,7 +381,7 @@ struct GammaConversionsConsumermc {
   template <typename T>
   bool passesPhotonCuts(const T& theV0, float theV0CosinePA)
   {
-    if (theV0.v0radius() < fMinR || theV0.v0radius() > fMaxR) {
+    if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
       return kFALSE;
     }
@@ -463,16 +391,17 @@ struct GammaConversionsConsumermc {
       return kFALSE;
     }
 
-    if (TMath::Abs(theV0.psipair()) > fPsiPairCut) {
+    if (TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
       return kFALSE;
     }
 
-    if (theV0CosinePA < fCosPAngleCut) {
+    if (theV0CosinePA < fV0CosPAngleMin) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
       return kFALSE;
     }
-
+    
+    //~ fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosine"));
     return kTRUE;
   }
 
@@ -492,11 +421,11 @@ struct GammaConversionsConsumermc {
   Bool_t ArmenterosQtCut(Double_t theAlpha, Double_t theQt, Double_t thePt)
   {
     // in AliPhysics this is the cut for if fDo2DQt && fDoQtGammaSelection == 2
-    Float_t lQtMaxPtDep = fQtPtMax * thePt;
-    if (lQtMaxPtDep > fQtMax) {
-      lQtMaxPtDep = fQtMax;
+    Float_t lQtMaxPtDep = fV0QtPtMultiplicator * thePt;
+    if (lQtMaxPtDep > fV0QtMax) {
+      lQtMaxPtDep = fV0QtMax;
     }
-    if (!(TMath::Power(theAlpha / fMaxPhotonAsymmetry, 2) + TMath::Power(theQt / lQtMaxPtDep, 2) < 1)) {
+    if (!(TMath::Power(theAlpha / fV0PhotonAsymmetryMax, 2) + TMath::Power(theQt / lQtMaxPtDep, 2) < 1)) {
       return kFALSE;
     }
     return kTRUE;
@@ -504,25 +433,25 @@ struct GammaConversionsConsumermc {
 
   template <typename T>
   bool selectionPIDTPC_track(const T& theTrack)
-  {
+  { 
     // TPC Electron Line
-    if (theTrack.tpcNSigmaEl() < fPIDnSigmaBelowElectronLine || theTrack.tpcNSigmaEl() > fPIDnSigmaAboveElectronLine) {
+    if (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineBelowMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineAboveMax) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
       return kFALSE;
     }
 
     // TPC Pion Line
-    if (theTrack.p() > fPIDMinPnSigmaAbovePionLine) {
+    if (theTrack.p() > fPIDPionRejectionPMin) {
       // low pt Pion rej
-      if (theTrack.p() < fPIDMaxPnSigmaAbovePionLine) {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaBelowElectronLine && theTrack.tpcNSigmaEl() < fPIDnSigmaAboveElectronLine && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLine) {
+      if (theTrack.p() < fPIDPionRejectionPBoarder) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineBelowMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineAboveMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
           fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
           return kFALSE;
         }
       }
-      // High Pt Pion rej
+      // High Pt Pion rej  
       else {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaBelowElectronLine && theTrack.tpcNSigmaEl() < fPIDnSigmaAboveElectronLine && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighP) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineBelowMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineAboveMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
           return kFALSE;
         }

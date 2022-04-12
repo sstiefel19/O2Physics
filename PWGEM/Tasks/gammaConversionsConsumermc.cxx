@@ -34,16 +34,19 @@ struct GammaConversionsConsumermc {
   Configurable<float> fCentMin{"fCentMin", 0.0, "lower bound of centrality selection"};
   Configurable<float> fCentMax{"fCentMax", 100.0, "upper bound of centrality selection"};
   */
-
+  
+  Configurable<int> fProcessNV0sMax{"fProcessNV0sMax", 0, "fProcessNV0sMax"};
+  int fIV0{0};
+  
   // track cuts
   Configurable<float> fTrackEtaMax{"fTrackEtaMax", 0.8, "accepted eta range"};
   Configurable<float> fTrackPtMin{"fTrackPtMin", 0.04, "minimum daughter track pt"};
-  Configurable<float> fPIDnSigmaElectronLineBelowMin{"fPIDnSigmaElectronLineBelowMin", -3., "minimum sigma electron PID for V0 daughter tracks"};
-  Configurable<float> fPIDnSigmaElectronLineAboveMax{"fPIDnSigmaElectronLineAboveMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
+  Configurable<float> fPIDnSigmaElectronLineMaxBelow{"fPIDnSigmaElectronLineMaxBelow", -100., "minimum sigma electron PID for V0 daughter tracks"};
+  Configurable<float> fPIDnSigmaElectronLineMaxAbove{"fPIDnSigmaElectronLineMaxAbove", 100., "maximum sigma electron PID for V0 daughter tracks"};
   Configurable<float> fPIDPionRejectionPMin{"fPIDPionRejectionPMin", 0.4, "minimum track momentum to apply any pion rejection"};                              // case 7:  // 0.4 GeV
   Configurable<float> fPIDPionRejectionPBoarder{"fPIDPionRejectionPBoarder", 8., "border between low and high momentum pion rejection"};                      // case 7:  // 8. GeV
-  Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", 3., "minimum sigma to be over the pion line for low momentum tracks"}; // case 4: 3.0sigma, 1.0 sigma at high momentum
-  Configurable<float> fPIDnSigmaAbovePionLineHighPMin{"fPIDnSigmaAbovePionLineHighPMin", 1., "minimum sigma to be over the pion line for high momentum tracks"};
+  Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", 0., "minimum sigma to be over the pion line for low momentum tracks"}; // case 4: 3.0sigma, 1.0 sigma at high momentum
+  Configurable<float> fPIDnSigmaAbovePionLineHighPMin{"fPIDnSigmaAbovePionLineHighPMin", 0., "minimum sigma to be over the pion line for high momentum tracks"};
   Configurable<float> fMinTPCFoundOverFindableCls{"fMinTPCNClsFoundOverFindable", 0.6, "minimum ratio found tpc clusters over findable"}; // case 9:  // 0.6
   Configurable<float> fMinTPCCrossedRowsOverFindableCls{"fMinTPCCrossedRowsOverFindableCls", 0.0, "minimum ratio TPC crossed rows over findable clusters"};
 
@@ -67,6 +70,8 @@ struct GammaConversionsConsumermc {
 
   // track histograms
   std::vector<MyHistogramSpec> fTrackHistoDefinitions{
+    {"hTrackEta", {HistType::kTH1F, {{800, -1.6f, 1.6f}}}},
+    {"hTrackPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
     {"hTPCFoundOverFindableCls", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
     {"hTPCCrossedRowsOverFindableCls", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
 
@@ -193,8 +198,9 @@ struct GammaConversionsConsumermc {
 
   template <typename TV0, typename TTRACKS>
   bool processPhoton(TV0 const& theV0, const float& theV0CosinePA, TTRACKS const& theTracks)
-  {
+  { 
     auto lV0Tracks = theTracks.sliceBy(aod::v0data::v0Id, theV0.v0Id());
+    //~ LOGF(info, "SFS processPhoton lV0Tracks.size %d()", lV0Tracks.size());
 
     fillReconstructedInfoHistograms("beforeCuts/",
                                     theV0,
@@ -202,6 +208,7 @@ struct GammaConversionsConsumermc {
                                     theV0CosinePA);
 
     for (auto& lTrack : lV0Tracks) {
+      //~ LOGF(info, "SFS processPhoton() in for loop over lV0Tracks");
       if (!trackPassesCuts(lTrack)) {
         return kFALSE;
       }
@@ -249,8 +256,14 @@ struct GammaConversionsConsumermc {
                aod::GammaConversionTracks const& theTracks,
                aod::GammaConversionsInfoTrue const& theV0sTrue)
   {
+    //~ LOGF(info, "SFS process beginning");
     for (auto& lV0 : theV0s) {
-
+      if (fProcessNV0sMax && fIV0 > fProcessNV0sMax) {
+        return;
+      }
+      ++fIV0;
+      
+      //~ LOGF(info, "SFS process process new lV0");
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
       auto lConvPhotonMCTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
 
@@ -308,9 +321,13 @@ struct GammaConversionsConsumermc {
 
   template <typename TTRACKS>
   void fillTrackHistograms(std::string const& theBAC, TTRACKS const& theV0Tracks)
-  {
+  { 
+    //~ LOGF(info, "SFS fillTrackHistograms");
     std::string lPath = fPrefixReconstructedTrackHistos + theBAC;
     auto fillTrackHistogramsI = [&](auto const& theTrack) {
+      //~ LOGF(info,"SFS inner fillTrackHistogramsI");
+      fillTH1(fTrackHistos, lPath + "hTrackEta", theTrack.eta());
+      fillTH1(fTrackHistos, lPath + "hTrackPt", theTrack.pt());
       fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
       fillTH1(fTrackHistos, lPath + "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
       fillTH2(fTrackHistos, lPath + "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
@@ -354,7 +371,7 @@ struct GammaConversionsConsumermc {
       return kFALSE;
     }
 
-    if (!(selectionPIDTPC_track(theTrack))) {
+    if (!(trackPassesTPCPID(theTrack))) {
       return kFALSE;
     }
 
@@ -401,6 +418,7 @@ struct GammaConversionsConsumermc {
   template <typename TV0, typename TTRACKS>
   void fillReconstructedInfoHistograms(std::string theBAC, TV0 const& theV0, TTRACKS const& theV0Tracks, float const& theV0CosinePA)
   {
+    //~ LOGF(info, "SFS fillReconstructedInfoHistograms");
     fillTrackHistograms(theBAC, theV0Tracks);
     fillV0Histograms(kRec, theBAC, theV0, &theV0CosinePA);
 
@@ -425,10 +443,10 @@ struct GammaConversionsConsumermc {
   }
 
   template <typename T>
-  bool selectionPIDTPC_track(const T& theTrack)
+  bool trackPassesTPCPID(const T& theTrack)
   {
     // TPC Electron Line
-    if (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineBelowMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineAboveMax) {
+    if (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineMaxBelow || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineMaxAbove) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
       return kFALSE;
     }
@@ -437,14 +455,14 @@ struct GammaConversionsConsumermc {
     if (theTrack.p() > fPIDPionRejectionPMin) {
       // low pt Pion rej
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineBelowMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineAboveMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineMaxBelow && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineMaxAbove && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
           fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineBelowMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineAboveMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineMaxBelow && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineMaxAbove && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
           return kFALSE;
         }

@@ -48,12 +48,12 @@ struct GammaConversionsConsumermc {
   Configurable<float> fMinTPCCrossedRowsOverFindableCls{"fMinTPCCrossedRowsOverFindableCls", 0.0, "minimum ratio TPC crossed rows over findable clusters"};
 
   // V0 cuts
-  Configurable<float> fV0CosPAngleMin{"fV0CosPAngleMin", 0.85, "mimimum cosinus of the pointing angle"}; // case 4
+  Configurable<float> fV0CosPAngleMin{"fV0CosPAngleMin", 0.85, "Set negative to disable. Minimum cosinus of the pointing angle"}; // case 4
   Configurable<float> fV0RMin{"fV0RMin", 5., "minimum conversion radius of the V0s"};
   Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
-  Configurable<float> fV0PhotonAsymmetryMax{"fV0PhotonAsymmetryMax", 0.95, "maximum photon asymetry"};
-  Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", 0.1, "maximum psi angle of the track pair"};
-  Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.11, "multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is  fV0QtMax."};
+  Configurable<float> fV0PhotonAsymmetryMax{"fV0PhotonAsymmetryMax", 0.95, "maximum photon asymetry. Set negative do disable cut."};
+  Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", 0.1, "maximum psi angle of the track pair. Set negative do disable cut. "};
+  Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.11, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.040, "the maximum value of the product, that is the maximum qt"};
 
   // define this in order to have a constructor of the HistogramSpec which copies the name into the title
@@ -208,7 +208,7 @@ struct GammaConversionsConsumermc {
     }
 
     // apply photon cuts
-    if (!passesPhotonCuts(theV0, theV0CosinePA)) {
+    if (!photonPassesCuts(theV0, theV0CosinePA)) {
       return kFALSE;
     }
 
@@ -311,6 +311,8 @@ struct GammaConversionsConsumermc {
   {
     std::string lPath = fPrefixReconstructedTrackHistos + theBAC;
     auto fillTrackHistogramsI = [&](auto const& theTrack) {
+      fillTH1(fTrackHistos, lPath + "hTrackEta", theTrack.eta());
+      fillTH1(fTrackHistos, lPath + "hTrackPt", theTrack.pt());
       fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
       fillTH1(fTrackHistos, lPath + "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
       fillTH2(fTrackHistos, lPath + "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
@@ -372,29 +374,28 @@ struct GammaConversionsConsumermc {
   }
 
   template <typename T>
-  bool passesPhotonCuts(const T& theV0, float theV0CosinePA)
+  bool photonPassesCuts(const T& theV0, float theV0CosinePA)
   {
     if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
       return kFALSE;
     }
 
-    if (!ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
+    if (fV0PhotonAsymmetryMax > 0. && !ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kArmenteros"));
       return kFALSE;
     }
 
-    if (TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
+    if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
       return kFALSE;
     }
 
-    if (theV0CosinePA < fV0CosPAngleMin) {
+    if (fV0CosPAngleMin > 0. && theV0CosinePA < fV0CosPAngleMin) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
       return kFALSE;
     }
 
-    //~ fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosine"));
     return kTRUE;
   }
 
@@ -418,7 +419,7 @@ struct GammaConversionsConsumermc {
     if (lQtMaxPtDep > fV0QtMax) {
       lQtMaxPtDep = fV0QtMax;
     }
-    if (!(TMath::Power(theAlpha / fV0PhotonAsymmetryMax, 2) + TMath::Power(theQt / lQtMaxPtDep, 2) < 1)) {
+    if ( (TMath::Power(theAlpha / fV0PhotonAsymmetryMax, 2) + TMath::Power(theQt / lQtMaxPtDep, 2)) >= 1) {
       return kFALSE;
     }
     return kTRUE;

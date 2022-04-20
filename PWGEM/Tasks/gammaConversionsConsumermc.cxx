@@ -38,8 +38,8 @@ struct GammaConversionsConsumermc {
   // track cuts
   Configurable<float> fTrackEtaMax{"fTrackEtaMax", 0.8, "accepted eta range"};
   Configurable<float> fTrackPtMin{"fTrackPtMin", 0.04, "minimum daughter track pt"};
-  Configurable<float> fPIDnSigmaElectronLineBelowMin{"fPIDnSigmaElectronLineBelowMin", -3., "minimum sigma electron PID for V0 daughter tracks"};
-  Configurable<float> fPIDnSigmaElectronLineAboveMax{"fPIDnSigmaElectronLineAboveMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
+  Configurable<float> fPIDnSigmaElectronMin{"fPIDnSigmaElectronMin", -3., "minimum sigma electron PID for V0 daughter tracks. Set 0 to disable."};
+  Configurable<float> fPIDnSigmaElectronMax{"fPIDnSigmaElectronMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
   Configurable<float> fPIDPionRejectionPMin{"fPIDPionRejectionPMin", 0.4, "minimum track momentum to apply any pion rejection"};                              // case 7:  // 0.4 GeV
   Configurable<float> fPIDPionRejectionPBoarder{"fPIDPionRejectionPBoarder", 8., "border between low and high momentum pion rejection"};                      // case 7:  // 8. GeV
   Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", 3., "minimum sigma to be over the pion line for low momentum tracks"}; // case 4: 3.0sigma, 1.0 sigma at high momentum
@@ -67,9 +67,10 @@ struct GammaConversionsConsumermc {
 
   // track histograms
   std::vector<MyHistogramSpec> fTrackHistoDefinitions{
+    {"hTrackPt", "hTrackPt;p_{T} (GeV/c);", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
+    {"hTrackEta", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
     {"hTPCFoundOverFindableCls", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
     {"hTPCCrossedRowsOverFindableCls", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
-
     {"hTPCdEdx", "hTPCdEdx;p_{T} (GeV/c);", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, 0.f, 200.f}}}},
     {"hTPCdEdxSigEl", "hTPCdEdxSigEl;p_{T} (GeV/c);", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}},
     {"hTPCdEdxSigPi", "hTPCdEdxSigPi;p_{T} (GeV/c);", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}}};
@@ -429,7 +430,7 @@ struct GammaConversionsConsumermc {
   bool selectionPIDTPC_track(const T& theTrack)
   {
     // TPC Electron Line
-    if (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineBelowMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineAboveMax) {
+    if (fPIDnSigmaElectronMin && (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMax)) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
       return kFALSE;
     }
@@ -438,14 +439,14 @@ struct GammaConversionsConsumermc {
     if (theTrack.p() > fPIDPionRejectionPMin) {
       // low pt Pion rej
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineBelowMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineAboveMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
           fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronLineBelowMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronLineAboveMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
           return kFALSE;
         }

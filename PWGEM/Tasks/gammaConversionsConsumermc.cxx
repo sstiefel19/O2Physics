@@ -70,18 +70,18 @@ struct GammaConversionsConsumermc {
     {"hTPCFoundOverFindableCls", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
     {"hTPCCrossedRowsOverFindableCls", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
 
-    {"hTPCdEdx", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, 0.f, 200.f}}}},
-    {"hTPCdEdxSigEl", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}},
-    {"hTPCdEdxSigPi", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}}};
+    {"hTPCdEdx", "hTPCdEdx;p_{T} (GeV/c);", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, 0.f, 200.f}}}},
+    {"hTPCdEdxSigEl", "hTPCdEdxSigEl;p_{T} (GeV/c);", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}},
+    {"hTPCdEdxSigPi", "hTPCdEdxSigPi;p_{T} (GeV/c);", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}}};
 
   // v0 histograms
   std::vector<MyHistogramSpec> fV0HistoDefinitions{
-    {"hPt", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
+    {"hPt", "hPt;p_{T} (GeV/c);", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
     {"hEta", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
     {"hPhi", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
-    {"hConvPointR", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
-    {"hArmenteros", {HistType::kTH2F, {{800, -1.f, 1.f}, {800, 0.f, 0.25f}}}},
-    {"hPsiPt", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
+    {"hConvPointR", "hConvPointR;conversion radius (cm);", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
+    {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, {800, 0.f, 0.25f}}}},
+    {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
     {"hCosPAngle", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
 
     {"IsPhotonSelected", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}} // only in afterCuts
@@ -90,11 +90,11 @@ struct GammaConversionsConsumermc {
   // only in mc
   // resolution histos
   std::vector<MyHistogramSpec> fV0ResolutionHistoDefinitions{
-    {"hPtRes", "hPtRes_Rec-MC", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
+    {"hPtRes", "hPtRes_Rec-MC;(GeV/c);", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
     {"hEtaRes", "hEtaRes_Rec-MC", {HistType::kTH1F, {{800, -3.145f, 3.145f}}}},
     {"hPhiRes", "hPhiRes_Rec-MC", {HistType::kTH1F, {{800, -3.145f, 3.145f}}}},
-    {"hConvPointRRes", "hConvPointRRes_Rec-MC", {HistType::kTH1F, {{800, -200.f, 200.f}}}},
-    {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
+    {"hConvPointRRes", "hConvPointRRes_Rec-MC;(cm);", {HistType::kTH1F, {{800, -200.f, 200.f}}}},
+    {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;(cm);", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
   };
 
   typedef std::map<std::string, HistPtr> mapStringHistPtr;

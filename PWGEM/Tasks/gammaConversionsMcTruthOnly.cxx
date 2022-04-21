@@ -155,6 +155,7 @@ struct gammaConversionsMcTruthOnly {
   // SFS my thinking: I chose this process signature for the following reasons:
   // 1) I loop over McCollisions in the first place in order not to miss any 'data' collision. Since the missing 1-to-1 corresponence between collisions and mc collisions this could happen if I looped over the collisions in the first place
   // 2) I still look at the collisions in order to be able to compare collision numbers with workflows where I loop over collisions in the first place - for example when Im interested in reconstructed V0s.
+  // 3) actually I think im still doing it wrong, since the outer for loop over theCollisions will only execute when for the given McCollision there is at least one collision. In that sense I will miss McCollisions information for which there are 0 collisions
   void process(aod::McCollision const& theMcCollision,
                soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                           aod::Collisions>> const& theCollisions,

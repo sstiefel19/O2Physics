@@ -144,8 +144,17 @@ struct gammaConversionsMcTruthOnly {
       {"hGammaConvertedRselPt", "hGammaConvertedRselPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}}
       },
   };
-
-  // loop over MC truth McCollisions
+  
+  
+  // from: Tutorials/src/mcHistograms.cxx
+  // Loop over MCColisions and get corresponding collisions (there can be more than one)
+  // For each of them get the corresponding tracks
+  // Note the use of "SmallGroups" template, that allows to handle both Run 2, where
+  // we have exactly 1-to-1 correspondence between collisions and mc collisions, and
+  // Run 3, where we can have 0, 1, or more collisions for a given mc collision
+  // SFS my thinking: I chose this process signature for the following reasons:
+  // 1) I loop over McCollisions in the first place in order not to miss any 'data' collision. Since the missing 1-to-1 corresponence between collisions and mc collisions this could happen if I looped over the collisions in the first place
+  // 2) I still look at the collisions in order to be able to compare collision numbers with workflows where I loop over collisions in the first place - for example when Im interested in reconstructed V0s.
   void process(aod::McCollision const& theMcCollision,
                soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                           aod::Collisions>> const& theCollisions,

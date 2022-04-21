@@ -19,7 +19,7 @@ namespace o2::aod
 {
 namespace gammatrackreco
 {
-DECLARE_SOA_COLUMN(PositiveCharge, positiveCharge, bool);                                //! true for positively charged track
+DECLARE_SOA_COLUMN(PositiveCharge, positiveCharge, bool);                                //! True for positively charged track
 DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity
 DECLARE_SOA_COLUMN(P, p, float);                                                         //! Total momentum in GeV/c
 DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Azimuthal angle
@@ -47,7 +47,8 @@ DECLARE_SOA_TABLE(GammaConversionTracks, "AOD", "V0TRACKS",
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCNSigmaPi);
 
-// need to declare these again (they also exist in v0data::) since some of them are dynamical there
+
+// need to declare these again (they also exist in v0data::) since some of them are dynamical in v0data::
 namespace gammamctrue
 {
 DECLARE_SOA_COLUMN(Px, px, float); //! Momentum in x-direction in GeV/c
@@ -58,8 +59,11 @@ DECLARE_SOA_COLUMN(Eta, eta, float); //! Pseudorapidity
 DECLARE_SOA_COLUMN(P, p, float);     //! Total momentum in GeV/c
 DECLARE_SOA_COLUMN(Phi, phi, float); //! Azimuthal angle
 DECLARE_SOA_COLUMN(Pt, pt, float);   //! Transversal momentum in GeV/c
+DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
 } // namespace gammamctrue
 
+// SFS think about delegating more info to tracks table - similar to mc truth only task
+// table to hold reconstructed mc confirmed photon conversions
 DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
                   o2::soa::Index<>,
                   v0data::V0Id,
@@ -92,4 +96,51 @@ DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
                   v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
                   v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                   v0data::PositivePhi<v0data::PxPos, v0data::PyPos>);
+
+// table to hold mc photon conversions (obtained from looping over all mc particles)
+DECLARE_SOA_TABLE(MCGammas, "AOD", "MCGAMMAS",
+                  o2::soa::Index<>,
+                  mcparticle::McCollisionId,
+                  gammamctrue::NDaughters,
+                  mcparticle::Eta,
+                  mcparticle::P,
+                  mcparticle::Phi,
+                  mcparticle::Pt);
+
+namespace gammamctrueAdd
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Mother0, mother0, int, MCGammas, ""); // SFS do I need to worry of overflows with indeces when not using collisions indeces?
+DECLARE_SOA_COLUMN(NMothers, nMothers, int);
+}
+
+
+DECLARE_SOA_TABLE(MCGammaTracks, "AOD", "MCGATRACKS",
+                  o2::soa::Index<>,
+                  gammamctrueAdd::Mother0Id,
+                  gammamctrueAdd::NMothers,
+                  mcparticle::PdgCode,
+                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
+                  mcparticle::Eta,
+                  mcparticle::P,
+                  mcparticle::Phi,
+                  mcparticle::Pt);
+
+
+//~ // table to hold mc photon conversions (obtained from looping over all mc particles)
+//~ DECLARE_SOA_TABLE(MCGammaConversions, "AOD", "MCGAMMACONV",
+                  //~ o2::soa::Index<>,
+                  //~ gammamctrue::GammaId,
+                  //~ gammamctrue::NElectronDaughters,
+                  //~ // obtained from daughter tracks
+                  //~ v0data::X, v0data::Y, v0data::Z, // origin positive daughter SFS check this
+                  //~ // true info from mother
+                  //~ gammamctrue::Px, gammamctrue::Py, gammamctrue::Pz,
+                  //~ gammamctrue::Eta,
+                  //~ gammamctrue::P,
+                  //~ gammamctrue::Phi,
+                  //~ gammamctrue::Pt
+                  //~ // Dynamic columns
+                  //~ // Longitudinal
+                  //~ );
 } // namespace o2::aod
+

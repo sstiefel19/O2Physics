@@ -1,0 +1,89 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \brief write relevant information for photon conversion analysis to an AO2D.root file. This file is then the only necessary input to perform
+/// pcm analysis.
+/// dependencies: o2-analysis-lf-lambdakzerobuilder
+/// \author stephan.friedrich.stiefelmaier@cern.ch
+
+// runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
+
+// todo: remove reduantant information in GammaConversionsInfoTrue
+#include "gammaTables.h"
+
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
+
+
+// using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+//~ using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+
+struct SkimmerTruthMc {
+
+  Produces<aod::MCGammas> fFuncTableMcGammas;
+  Produces<aod::MCGammaTracks> fFuncTableMcGammaTracks;
+  
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}}
+    },
+  };
+  
+
+    // loop over MC truth McCollisions
+  void process(aod::McCollision const& theMcCollision,
+               soa::SmallGroups<soa::Join<aod::McCollisionLabels,
+                                          aod::Collisions>> const& theCollisions,
+               aod::McParticles const& theMcParticles)
+  {
+    for (auto &lCollision : theCollisions) {
+
+      registry.fill(HIST("hCollisionZ"), lCollision.posZ());
+      for (auto &lMcParticle : theMcParticles) {
+        if (lMcParticle.pdgCode() == 22) {
+          size_t lNDaughters = 0;
+          if (lMcParticle.has_daughters()) {
+            for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
+              ++lNDaughters;
+              fFuncTableMcGammaTracks(lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
+                                      lDaughter.mothersIds().size(),
+                                      lDaughter.pdgCode(),
+                                      lDaughter.vx(), lDaughter.vy(), lDaughter.vz(),
+                                      lDaughter.eta(),
+                                      lDaughter.p(),
+                                      lDaughter.phi(),
+                                      lDaughter.pt());
+            }
+          }
+          fFuncTableMcGammas(lMcParticle.mcCollisionId(),
+                             lNDaughters,
+                             lMcParticle.eta(),
+                             lMcParticle.p(),
+                             lMcParticle.phi(),
+                             lMcParticle.pt());
+        }
+      }
+    }
+  } 
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<SkimmerTruthMc>(cfgc)};
+}

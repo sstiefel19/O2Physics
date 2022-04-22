@@ -195,7 +195,7 @@ struct GammaConversionsConsumermc {
   template <typename TV0, typename TTRACKS>
   bool processPhoton(TV0 const& theV0, const float& theV0CosinePA, TTRACKS const& theTracks)
   {
-    auto lV0Tracks = theTracks.sliceBy(aod::v0data::v0Id, theV0.v0Id());
+    auto lV0Tracks = theTracks.sliceBy(aod::v0data::v0Id, theV0.v0Id()); // SFS understand: why not globalIndex() as in skimmerTruthOnly?
 
     fillReconstructedInfoHistograms("beforeCuts/",
                                     theV0,

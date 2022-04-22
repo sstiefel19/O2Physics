@@ -132,7 +132,7 @@ struct gammaConversionsMcTruthOnly {
     "registry",
     {
       {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hGammaProdInEtaAccP", "hGammaProdInEtaAccP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaProdInEtaAccPt", "hGammaProdInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaMoreThanTwoDaughtersPt", "hGammaMoreThanTwoDaughtersPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
@@ -157,49 +157,44 @@ struct gammaConversionsMcTruthOnly {
   // 2) I still look at the collisions in order to be able to compare collision numbers with workflows where I loop over collisions in the first place - for example when Im interested in reconstructed V0s.
   // 3) actually I think im still doing it wrong, since the outer for loop over theCollisions will only execute when for the given McCollision there is at least one collision. In that sense I will miss McCollisions information for which there are 0 collisions
   void process(aod::McCollision const& theMcCollision,
-               soa::SmallGroups<soa::Join<aod::McCollisionLabels,
-                                          aod::Collisions>> const& theCollisions,
                aod::McParticles const& theMcParticles)
   {
-    for (auto &lCollision : theCollisions) {
+    registry.fill(HIST("hMcCollisionZ"), theMcCollision.posZ());
+    for (auto &lMcParticle : theMcParticles) {
 
-      registry.fill(HIST("hCollisionZ"), lCollision.posZ());
-      for (auto &lMcParticle : theMcParticles) {
+      if ((lMcParticle.pdgCode() == 22) &&
+          (std::abs(lMcParticle.eta()) < 0.8)) { // SFS todo: track v0 eta??
 
-        if ((lMcParticle.pdgCode() == 22) &&
-            (std::abs(lMcParticle.eta()) < 0.8)) { // SFS todo: track v0 eta??
-
-          registry.fill(HIST("hGammaProdInEtaAccP"), lMcParticle.p());
-          registry.fill(HIST("hGammaProdInEtaAccPt"), lMcParticle.pt());
-          
-          size_t lNDaughters = 0;
-          size_t lBothElectrons = 0;
-          if (lMcParticle.has_daughters()) {
+        registry.fill(HIST("hGammaProdInEtaAccP"), lMcParticle.p());
+        registry.fill(HIST("hGammaProdInEtaAccPt"), lMcParticle.pt());
+        
+        size_t lNDaughters = 0;
+        size_t lBothElectrons = 0;
+        if (lMcParticle.has_daughters()) {
+          for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
+            ++lNDaughters;
+            lBothElectrons += std::abs(lDaughter.pdgCode()) == 11;
+          }
+          registry.fill(HIST("hNDaughters"), 0.5 + lNDaughters);
+          if (lBothElectrons == 2) {
+            if (lNDaughters != 2){
+              LOGF(info, "SFS ALARM");
+            }
             for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-              ++lNDaughters;
-              lBothElectrons += std::abs(lDaughter.pdgCode()) == 11;
-            }
-            registry.fill(HIST("hNDaughters"), 0.5 + lNDaughters);
-            if (lBothElectrons == 2) {
-              if (lNDaughters != 2){
-                LOGF(info, "SFS ALARM");
-              }
-              for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-                float lConversionRadius = std::sqrt(std::pow(lDaughter.vx(), 2) + std::pow(lDaughter.vy(), 2));
-                registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
-                registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcParticle.p());
-                registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcParticle.pt());
+              float lConversionRadius = std::sqrt(std::pow(lDaughter.vx(), 2) + std::pow(lDaughter.vy(), 2));
+              registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
+              registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcParticle.p());
+              registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcParticle.pt());
 
-                if (lConversionRadius > 5. && lConversionRadius < 180.) {
-                  registry.fill(HIST("hGammaConvertedRselP"), lMcParticle.p());
-                  registry.fill(HIST("hGammaConvertedRselPt"), lMcParticle.pt());
-                }
-                break;
+              if (lConversionRadius > 5. && lConversionRadius < 180.) {
+                registry.fill(HIST("hGammaConvertedRselP"), lMcParticle.p());
+                registry.fill(HIST("hGammaConvertedRselPt"), lMcParticle.pt());
               }
+              break;
             }
-            if (lBothElectrons > 2) {
-              registry.fill(HIST("hGammaMoreThanTwoDaughtersPt"), lMcParticle.pt());
-            }
+          }
+          if (lBothElectrons > 2) {
+            registry.fill(HIST("hGammaMoreThanTwoDaughtersPt"), lMcParticle.pt());
           }
         }
       }

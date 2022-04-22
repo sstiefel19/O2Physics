@@ -31,7 +31,10 @@ struct gammaConversionsMcTruthOnlyConsumer {
   HistogramRegistry registry{
     "registry",
     {
+      {"hPeculiarOccurences", "hPeculiarOccurences", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
       {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hNElectrons", "hNElectrons", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{1000, 0.f, 1000.f}}}},
       {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hGammaProdInEtaAccP", "hGammaProdInEtaAccP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaProdInEtaAccPt", "hGammaProdInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
@@ -46,8 +49,9 @@ struct gammaConversionsMcTruthOnlyConsumer {
   };
 
   // loop over MC truth McCollisions
-  void process(aod::MCGammas const  &theMcGammas,
-               aod::MCGammaTracks const &theMcGammaTracks)
+  void process(aod::McCollision const &theMcCollision,
+               aod::MCGammas const  &theMcGammas,
+               aod::MCGammaDaughters const &theMcGammaDaughters)
   {
     for (auto &lMcGamma : theMcGammas) {
 
@@ -56,38 +60,48 @@ struct gammaConversionsMcTruthOnlyConsumer {
         registry.fill(HIST("hGammaProdInEtaAccP"), lMcGamma.p());
         registry.fill(HIST("hGammaProdInEtaAccPt"), lMcGamma.pt());
         
-        // todo: look at theMcGammaTracks, slice, check number of daughters, that they are electrons,
+        // todo: look at theMcGammaDaughters, slice, check number of daughters, that they are electrons,
         // etc 
-        
-        //~ size_t lNDaughters = 0;
-        //~ size_t lBothElectrons = 0;
-        //~ if (lMcParticle.has_daughters()) {
-          //~ for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-            //~ ++lNDaughters;
-            //~ lBothElectrons += std::abs(lDaughter.pdgCode()) == 11;
-          //~ }
-          //~ registry.fill(HIST("hNDaughters"), 0.5 + lNDaughters);
-          //~ if (lBothElectrons == 2) {
-            //~ if (lNDaughters != 2){
-              //~ LOGF(info, "SFS ALARM");
-            //~ }
-            //~ for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-              //~ float lConversionRadius = std::sqrt(std::pow(lDaughter.vx(), 2) + std::pow(lDaughter.vy(), 2));
-              //~ registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
-              //~ registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcParticle.p());
-              //~ registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcParticle.pt());
+        int const lNDaughters = lMcGamma.nDaughters();
+        if (lNDaughters){
+          auto lDaughters = theMcGammaDaughters.sliceBy(aod::truthOnly2::mother0Id, lMcGamma.globalIndex());
+          
+          if (lDaughters.size() != lNDaughters){
+            LOGF(warning, "SFS differing number of daughters. This should never happen. %d vs %d", lDaughters.size(), lNDaughters);
+            registry.fill(HIST("hPeculiarOccurences"), -0.5);
+          }
+          
+          size_t lNElectrons = 0;
+          for (auto &lDaughter : lDaughters) {
+            registry.fill(HIST("hPdgCodeDaughters"), 0.5 + lDaughter.pdgCode());
+            lNElectrons += std::abs(lDaughter.pdgCode()) == 11;
+          }
+          registry.fill(HIST("hNElectrons"), 0.5 + lNElectrons);
+          
+          // "regular" conversion
+          if (lNElectrons == 2) {
+            
+            if (lNDaughters != 2) {
+              registry.fill(HIST("hPeculiarOccurences"), 0.5);
+            }
+            
+            // access first daughter to get conversion point
+            auto const &lDaughter0 = lDaughters.begin();
+            float lConversionRadius = std::sqrt(std::pow(lDaughter0.vx(), 2) + std::pow(lDaughter0.vy(), 2));
+            registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
+            registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcGamma.p());
+            registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcGamma.pt());
 
-              //~ if (lConversionRadius > 5. && lConversionRadius < 180.) {
-                //~ registry.fill(HIST("hGammaConvertedRselP"), lMcParticle.p());
-                //~ registry.fill(HIST("hGammaConvertedRselPt"), lMcParticle.pt());
-              //~ }
-              //~ break;
-            //~ }
-          //~ }
-          //~ if (lBothElectrons > 2) {
-            //~ registry.fill(HIST("hGammaMoreThanTwoDaughtersPt"), lMcParticle.pt());
-          //~ }
-        //~ }
+            if (lConversionRadius > 5. && lConversionRadius < 180.) {
+              registry.fill(HIST("hGammaConvertedRselP"), lMcGamma.p());
+              registry.fill(HIST("hGammaConvertedRselPt"), lMcGamma.pt());
+            }
+          }
+          if (lNElectrons > 2) {
+            registry.fill(HIST("hGammaMoreThanTwoDaughtersPt"), lMcGamma.pt());
+          }
+        }
+        registry.fill(HIST("hNDaughters"), 0.5 + lNDaughters);
       }
     }
   }

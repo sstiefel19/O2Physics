@@ -59,7 +59,6 @@ DECLARE_SOA_COLUMN(Eta, eta, float); //! Pseudorapidity
 DECLARE_SOA_COLUMN(P, p, float);     //! Total momentum in GeV/c
 DECLARE_SOA_COLUMN(Phi, phi, float); //! Azimuthal angle
 DECLARE_SOA_COLUMN(Pt, pt, float);   //! Transversal momentum in GeV/c
-DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
 } // namespace gammamctrue
 
 // SFS think about delegating more info to tracks table - similar to mc truth only task
@@ -97,50 +96,42 @@ DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
                   v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                   v0data::PositivePhi<v0data::PxPos, v0data::PyPos>);
 
+
+// ================= MC truth only task ======================
+namespace truthOnly1
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //! Collision to which this McGamma belongs
+DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!      
+}
+
 // table to hold mc photon conversions (obtained from looping over all mc particles)
 DECLARE_SOA_TABLE(MCGammas, "AOD", "MCGAMMAS",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId,
-                  gammamctrue::NDaughters,
+                  truthOnly1::NDaughters,
                   mcparticle::Eta,
                   mcparticle::P,
                   mcparticle::Phi,
                   mcparticle::Pt);
 
-namespace gammamctrueAdd
+namespace truthOnly2
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Mother0, mother0, int, MCGammas, ""); // SFS do I need to worry of overflows with indeces when not using collisions indeces?
+DECLARE_SOA_INDEX_COLUMN_FULL(Mother0, mother0, int, MCGammas, ""); // SFS do I need to worry of overflows?
+//~ DECLARE_SOA_INDEX_COLUMN(MCGamma, v0);                                       //!
 DECLARE_SOA_COLUMN(NMothers, nMothers, int);
 }
 
-
-DECLARE_SOA_TABLE(MCGammaTracks, "AOD", "MCGATRACKS",
+// table to hold daughter particles of MC gammas
+DECLARE_SOA_TABLE(MCGammaDaughters, "AOD", "MCGADAUGHTERS",
                   o2::soa::Index<>,
-                  gammamctrueAdd::Mother0Id,
-                  gammamctrueAdd::NMothers,
+                  mcparticle::McCollisionId, // SFS might be superflous since there is already a pointer to MCGammas which point to mccollision
+                  truthOnly2::Mother0Id,
+                  truthOnly2::NMothers,
                   mcparticle::PdgCode,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
                   mcparticle::Eta,
                   mcparticle::P,
                   mcparticle::Phi,
                   mcparticle::Pt);
-
-
-//~ // table to hold mc photon conversions (obtained from looping over all mc particles)
-//~ DECLARE_SOA_TABLE(MCGammaConversions, "AOD", "MCGAMMACONV",
-                  //~ o2::soa::Index<>,
-                  //~ gammamctrue::GammaId,
-                  //~ gammamctrue::NElectronDaughters,
-                  //~ // obtained from daughter tracks
-                  //~ v0data::X, v0data::Y, v0data::Z, // origin positive daughter SFS check this
-                  //~ // true info from mother
-                  //~ gammamctrue::Px, gammamctrue::Py, gammamctrue::Pz,
-                  //~ gammamctrue::Eta,
-                  //~ gammamctrue::P,
-                  //~ gammamctrue::Phi,
-                  //~ gammamctrue::Pt
-                  //~ // Dynamic columns
-                  //~ // Longitudinal
-                  //~ );
 } // namespace o2::aod
 

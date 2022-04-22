@@ -36,51 +36,46 @@ using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
 struct SkimmerTruthMc {
 
   Produces<aod::MCGammas> fFuncTableMcGammas;
-  Produces<aod::MCGammaTracks> fFuncTableMcGammaTracks;
+  Produces<aod::MCGammaDaughters> fFuncTableMcGammaDaughters;
   
   HistogramRegistry registry{
     "registry",
     {
-      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}}
+      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}}
     },
   };
   
-
-    // loop over MC truth McCollisions
+  // loop over MC truth McCollisions
   void process(aod::McCollision const& theMcCollision,
-               soa::SmallGroups<soa::Join<aod::McCollisionLabels,
-                                          aod::Collisions>> const& theCollisions,
                aod::McParticles const& theMcParticles)
   {
-    for (auto &lCollision : theCollisions) {
-
-      registry.fill(HIST("hCollisionZ"), lCollision.posZ());
-      for (auto &lMcParticle : theMcParticles) {
-        if (lMcParticle.pdgCode() == 22) {
-          size_t lNDaughters = 0;
-          if (lMcParticle.has_daughters()) {
-            for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-              ++lNDaughters;
-              fFuncTableMcGammaTracks(lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
-                                      lDaughter.mothersIds().size(),
-                                      lDaughter.pdgCode(),
-                                      lDaughter.vx(), lDaughter.vy(), lDaughter.vz(),
-                                      lDaughter.eta(),
-                                      lDaughter.p(),
-                                      lDaughter.phi(),
-                                      lDaughter.pt());
-            }
+    registry.fill(HIST("hMcCollisionZ"), theMcCollision.posZ());
+    for (auto &lMcParticle : theMcParticles) {
+      if (lMcParticle.pdgCode() == 22) {
+        size_t lNDaughters = 0;
+        if (lMcParticle.has_daughters()) {
+          for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
+            ++lNDaughters;
+            fFuncTableMcGammaDaughters(lMcParticle.mcCollisionId(),
+                                       lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
+                                       lDaughter.mothersIds().size(),
+                                       lDaughter.pdgCode(),
+                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(),
+                                       lDaughter.eta(),
+                                       lDaughter.p(),
+                                       lDaughter.phi(),
+                                       lDaughter.pt());
           }
-          fFuncTableMcGammas(lMcParticle.mcCollisionId(),
-                             lNDaughters,
-                             lMcParticle.eta(),
-                             lMcParticle.p(),
-                             lMcParticle.phi(),
-                             lMcParticle.pt());
         }
+        fFuncTableMcGammas(lMcParticle.mcCollisionId(),
+                           lNDaughters,
+                           lMcParticle.eta(),
+                           lMcParticle.p(),
+                           lMcParticle.phi(),
+                           lMcParticle.pt());
       }
     }
-  } 
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

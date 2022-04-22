@@ -101,6 +101,7 @@ DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
 namespace truthOnly1
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //! Collision to which this McGamma belongs
+DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);    //! just a number that can be used to associate daughter particles with a gamma
 DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!      
 }
 
@@ -108,6 +109,7 @@ DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
 DECLARE_SOA_TABLE(MCGammas, "AOD", "MCGAMMAS",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId,
+                  truthOnly1::Gamma,
                   truthOnly1::NDaughters,
                   mcparticle::Eta,
                   mcparticle::P,
@@ -116,7 +118,7 @@ DECLARE_SOA_TABLE(MCGammas, "AOD", "MCGAMMAS",
 
 namespace truthOnly2
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Mother0, mother0, int, MCGammas, ""); // SFS do I need to worry of overflows?
+DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int, MCGammas, ""); // SFS do I need to worry of overflows?
 //~ DECLARE_SOA_INDEX_COLUMN(MCGamma, v0);                                       //!
 DECLARE_SOA_COLUMN(NMothers, nMothers, int);
 }
@@ -125,7 +127,7 @@ DECLARE_SOA_COLUMN(NMothers, nMothers, int);
 DECLARE_SOA_TABLE(MCGammaDaughters, "AOD", "MCGADAUGHTERS",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId, // SFS might be superflous since there is already a pointer to MCGammas which point to mccollision
-                  truthOnly2::Mother0Id,
+                  truthOnly2::MotherId,
                   truthOnly2::NMothers,
                   mcparticle::PdgCode,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,

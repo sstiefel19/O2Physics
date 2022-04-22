@@ -34,7 +34,7 @@ struct gammaConversionsMcTruthOnlyConsumer {
       {"hPeculiarOccurences", "hPeculiarOccurences", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
       {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
       {"hNElectrons", "hNElectrons", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{1000, 0.f, 1000.f}}}},
+      {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
       {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hGammaProdInEtaAccP", "hGammaProdInEtaAccP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaProdInEtaAccPt", "hGammaProdInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
@@ -64,7 +64,7 @@ struct gammaConversionsMcTruthOnlyConsumer {
         // etc 
         int const lNDaughters = lMcGamma.nDaughters();
         if (lNDaughters){
-          auto lDaughters = theMcGammaDaughters.sliceBy(aod::truthOnly2::mother0Id, lMcGamma.globalIndex());
+          auto lDaughters = theMcGammaDaughters.sliceBy(aod::truthOnly2::motherId, lMcGamma.gamma());
           
           if (lDaughters.size() != lNDaughters){
             LOGF(warning, "SFS differing number of daughters. This should never happen. %d vs %d", lDaughters.size(), lNDaughters);

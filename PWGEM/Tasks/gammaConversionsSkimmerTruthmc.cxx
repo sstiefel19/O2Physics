@@ -57,7 +57,8 @@ struct SkimmerTruthMc {
           for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
             ++lNDaughters;
             fFuncTableMcGammaDaughters(lMcParticle.mcCollisionId(),
-                                       lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
+                                       lMcParticle.globalIndex(),
+                                       //~ lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
                                        lDaughter.mothersIds().size(),
                                        lDaughter.pdgCode(),
                                        lDaughter.vx(), lDaughter.vy(), lDaughter.vz(),
@@ -68,6 +69,7 @@ struct SkimmerTruthMc {
           }
         }
         fFuncTableMcGammas(lMcParticle.mcCollisionId(),
+                           lMcParticle.globalIndex(),
                            lNDaughters,
                            lMcParticle.eta(),
                            lMcParticle.p(),

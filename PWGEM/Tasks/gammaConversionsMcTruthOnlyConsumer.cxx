@@ -33,20 +33,27 @@ struct gammaConversionsMcTruthOnlyConsumer {
   HistogramRegistry registry{
     "registry",
     {
-      {"hPeculiarOccurences", "hPeculiarOccurences", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
-      {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hNElectrons", "hNElectrons", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
       {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      
+      {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
+      {"hNElectrons", "hNElectrons", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      
       {"hGammaProdInEtaAccP", "hGammaProdInEtaAccP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaProdInEtaAccPt", "hGammaProdInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaMoreThanTwoDaughtersPt", "hGammaMoreThanTwoDaughtersPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaConvertedRP", "hGammaConvertedRP", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      
       {"hGammaConvertedR", "hGammaConvertedR", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
       {"hGammaConvertedRselP", "hGammaConvertedRselP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       
+      {"hGammaConvertedEtaP", "hGammaConvertedEtaP", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedRP", "hGammaConvertedRP", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedRZ", "hGammaConvertedRZ", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
+      
+      {"hGammaProdInEtaAccPt", "hGammaProdInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaMoreThanTwoDaughtersPt", "hGammaMoreThanTwoDaughtersPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      
       {"hGammaConvertedRPt", "hGammaConvertedRPt", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedRselPt", "hGammaConvertedRselPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}}
+      {"hGammaConvertedRselPt", "hGammaConvertedRselPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hPeculiarOccurences", "hPeculiarOccurences", {HistType::kTH1F, {{50, -25.f, 25.f}}}}
       },
   };
 
@@ -81,7 +88,8 @@ struct gammaConversionsMcTruthOnlyConsumer {
           registry.fill(HIST("hNElectrons"), 0.5 + lNElectrons);
           
           // "regular" conversion
-          if (lNElectrons == 2) {
+          //~ if (lNElectrons == 2) {
+          if (lNElectrons >= 2) {
             
             if (lNDaughters != 2) {
               registry.fill(HIST("hPeculiarOccurences"), 0.5);
@@ -90,9 +98,11 @@ struct gammaConversionsMcTruthOnlyConsumer {
             // access first daughter to get conversion point
             auto const &lDaughter0 = lDaughters.begin();
             float lConversionRadius = std::sqrt(std::pow(lDaughter0.vx(), 2) + std::pow(lDaughter0.vy(), 2));
+            registry.fill(HIST("hGammaConvertedEtaP"), lMcGamma.eta(), lMcGamma.p());
             registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
             registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcGamma.p());
             registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcGamma.pt());
+            registry.fill(HIST("hGammaConvertedRZ"), lConversionRadius, lDaughter0.vz());
 
             if (lConversionRadius > 5. && lConversionRadius < 180.) {
               registry.fill(HIST("hGammaConvertedRselP"), lMcGamma.p());

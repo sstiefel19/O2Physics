@@ -16,6 +16,8 @@
 
 #include "gammaTables.h"
 
+#include "TVector3.h"
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
@@ -33,7 +35,7 @@ struct gammaConversionsMcTruthOnlyConsumer {
   HistogramRegistry registry{
     "registry",
     {
-      //~ {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
       
       {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
       {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
@@ -108,9 +110,17 @@ struct gammaConversionsMcTruthOnlyConsumer {
             registry.fill(HIST("hGammaConvertedEtaZ"), lMcGamma.eta(), lDaughter0.vz());
             registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
             registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcGamma.p());
-            registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcGamma.pt());
             registry.fill(HIST("hGammaConvertedRZ"), lConversionRadius, lDaughter0.vz());
-            registry.fill(HIST("hGammaConvertedZP"), lDaughter0.vz(), lMcGamma.pt());
+            registry.fill(HIST("hGammaConvertedZP"), lDaughter0.vz(), lMcGamma.p());
+
+            registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcGamma.pt());
+            
+            TVector3 lDaughter0Vtx(lDaughter0.vx(),lDaughter0.vy(), lDaughter0.vz());
+            
+            float_t lEtaDiff = lDaughter0Vtx.Eta() - lMcGamma.eta();
+            registry.fill(HIST("hEtaDiff"), lEtaDiff);
+            
+            
 
             if (lConversionRadius > 5. && lConversionRadius < 180.) {
               registry.fill(HIST("hGammaConvertedRselP"), lMcGamma.p());

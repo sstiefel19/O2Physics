@@ -19,6 +19,9 @@
 // todo: remove reduantant information in GammaConversionsInfoTrue
 #include "gammaTables.h"
 
+#include "TVector3.h"
+
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -41,7 +44,9 @@ struct SkimmerTruthMc {
   HistogramRegistry registry{
     "registry",
     {
-      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}}
+      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
+
     },
   };
   
@@ -56,6 +61,13 @@ struct SkimmerTruthMc {
         if (lMcParticle.has_daughters()) {
           for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
             ++lNDaughters;
+            
+            TVector3 lDaughterVtx(lDaughter.vx(),lDaughter.vy(), lDaughter.vz());
+            if (lMcParticle.isPhysicalPrimary()){
+              float_t lEtaDiff = lDaughterVtx.Eta() - lMcParticle.eta();
+              registry.fill(HIST("hEtaDiff"), lEtaDiff);
+            }
+            
             fFuncTableMcGammaDaughters(lMcParticle.mcCollisionId(),
                                        lMcParticle.globalIndex(),
                                        //~ lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
@@ -70,6 +82,7 @@ struct SkimmerTruthMc {
         }
         fFuncTableMcGammas(lMcParticle.mcCollisionId(),
                            lMcParticle.globalIndex(),
+                           lMcParticle.isPhysicalPrimary(),
                            lNDaughters,
                            lMcParticle.eta(),
                            lMcParticle.p(),

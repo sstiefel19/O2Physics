@@ -102,6 +102,7 @@ namespace truthOnly1
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //! Collision to which this McGamma belongs
 DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);    //! just a number that can be used to associate daughter particles with a gamma
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);   
 DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!      
 }
 
@@ -109,7 +110,8 @@ DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
 DECLARE_SOA_TABLE(MCGammas, "AOD", "MCGAMMAS",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId,
-                  truthOnly1::Gamma,
+                  truthOnly1::Gamma, //SFS maybe change name?
+                  truthOnly1::IsPhysicalPrimary,
                   truthOnly1::NDaughters,
                   mcparticle::Eta,
                   mcparticle::P,

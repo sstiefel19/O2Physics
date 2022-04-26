@@ -28,6 +28,8 @@ using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 struct gammaConversionsMcTruthOnlyConsumer {
 
+  Configurable<float> fEtaMax{"fEtaMax", 0.8, "aMaximum photon eta"};
+
   HistogramRegistry registry{
     "registry",
     {
@@ -55,7 +57,7 @@ struct gammaConversionsMcTruthOnlyConsumer {
   {
     for (auto &lMcGamma : theMcGammas) {
 
-      if (std::abs(lMcGamma.eta()) < 0.8) { // SFS todo: track v0 eta??
+      if (std::abs(lMcGamma.eta()) < fEtaMax) { // SFS todo: track v0 eta??
 
         registry.fill(HIST("hGammaProdInEtaAccP"), lMcGamma.p());
         registry.fill(HIST("hGammaProdInEtaAccPt"), lMcGamma.pt());

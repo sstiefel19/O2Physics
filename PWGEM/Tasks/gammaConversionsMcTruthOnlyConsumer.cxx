@@ -41,7 +41,7 @@ struct gammaConversionsMcTruthOnlyConsumer {
       {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
       {"hNElectrons", "hNElectrons", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
       
-      {"hGammaProdInEtaAccP", "hGammaProdInEtaAccP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaProdPrimaryInEtaAccP", "hGammaProdPrimaryInEtaAccP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       
       {"hGammaConvertedR", "hGammaConvertedR", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
       {"hGammaConvertedRselP", "hGammaConvertedRselP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
@@ -55,7 +55,7 @@ struct gammaConversionsMcTruthOnlyConsumer {
 
       {"hGammaConvertedZP", "hGammaConvertedZP", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, 0.f, 25.f}}}},
       
-      {"hGammaProdInEtaAccPt", "hGammaProdInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaProdPrimaryInEtaAccPt", "hGammaProdPrimaryInEtaAccPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaMoreThanTwoDaughtersPt", "hGammaMoreThanTwoDaughtersPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       
       {"hGammaConvertedRPt", "hGammaConvertedRPt", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
@@ -71,10 +71,11 @@ struct gammaConversionsMcTruthOnlyConsumer {
   {
     for (auto &lMcGamma : theMcGammas) {
 
-      if (std::abs(lMcGamma.eta()) < fEtaMax) { // SFS todo: track v0 eta??
+      if (lMcGamma.isPhysicalPrimary() && std::abs(lMcGamma.eta()) < fEtaMax) { // SFS todo: track v0 eta??
+      //~ if (std::abs(lMcGamma.eta()) < fEtaMax) { // SFS todo: track v0 eta??
 
-        registry.fill(HIST("hGammaProdInEtaAccP"), lMcGamma.p());
-        registry.fill(HIST("hGammaProdInEtaAccPt"), lMcGamma.pt());
+        registry.fill(HIST("hGammaProdPrimaryInEtaAccP"), lMcGamma.p());
+        registry.fill(HIST("hGammaProdPrimaryInEtaAccPt"), lMcGamma.pt());
         
         // todo: look at theMcGammaDaughters, slice, check number of daughters, that they are electrons,
         // etc 

@@ -26,7 +26,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-struct GammaConversionsConsumermc {
+struct GammaConversionsMc {
 
   // event cuts
   /*
@@ -458,5 +458,5 @@ struct GammaConversionsConsumermc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<GammaConversionsConsumermc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<GammaConversionsMc>(cfgc)};
 }

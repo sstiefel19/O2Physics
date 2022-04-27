@@ -121,8 +121,9 @@ DECLARE_SOA_TABLE(MCGammas, "AOD", "MCGAMMAS",
 namespace truthOnly2
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int, MCGammas, ""); // SFS do I need to worry of overflows?
-//~ DECLARE_SOA_INDEX_COLUMN(MCGamma, v0);                                       //!
 DECLARE_SOA_COLUMN(NMothers, nMothers, int);
+DECLARE_SOA_DYNAMIC_COLUMN(R, r,   //! vertex 2d r
+      [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 }
 
 // table to hold daughter particles of MC gammas
@@ -136,6 +137,8 @@ DECLARE_SOA_TABLE(MCGammaDaughters, "AOD", "MCGADAUGHTERS",
                   mcparticle::Eta,
                   mcparticle::P,
                   mcparticle::Phi,
-                  mcparticle::Pt);
+                  mcparticle::Pt,
+                  truthOnly2::R<mcparticle::Vx, mcparticle::Vy>); //                       v0data::V0Radius<v0data::X, v0data::Y>,
+
 } // namespace o2::aod
 

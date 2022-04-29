@@ -36,7 +36,7 @@ using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 //~ using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
-struct gammaConversionsNoRecoSkimmerMc {
+struct skimmerGammaConversionsTruthOnlyMc {
 
   Produces<aod::MCGammas> fFuncTableMcGammas;
   Produces<aod::MCGammaDaughters> fFuncTableMcGammaDaughters;
@@ -95,5 +95,5 @@ struct gammaConversionsNoRecoSkimmerMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<gammaConversionsNoRecoSkimmerMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsTruthOnlyMc>(cfgc)};
 }

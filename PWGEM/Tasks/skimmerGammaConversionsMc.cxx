@@ -30,35 +30,45 @@ using namespace o2::framework::expressions;
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
-struct SkimmerMc {
+struct skimmerGammaConversionsMc {
+  
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hMotherSameNess", "hMotherSameNess", {HistType::kTH1F, {{13, 0.f, 14.f}}}},
+    },
+  };
 
   Produces<aod::GammaConversionTracks> fFuncTableGammaTracks;
   Produces<aod::GammaConversionsInfoTrue> fFuncTableV0InfoTrue;
-
+  
   // ============================ FUNCTION DEFINITIONS ====================================================
-  void process(aod::Collisions::iterator const& theCollision,
+  void process(aod::Collisions::iterator const &theCollision,
                aod::V0s,
-               aod::V0Datas const& theV0s,
-               tracksAndTPCInfoMC const& theTracks,
-               aod::McParticles const& theMcParticles)
+               aod::V0Datas const &theV0s,
+               tracksAndTPCInfoMC const &theTracks,
+               aod::McParticles const &theMcParticles)
   {
     auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
       fFuncTableGammaTracks(
         theV0.v0Id(),
-        theIsPositive,
         theIsFromConversionPhoton,
-        theTrack.tpcFoundOverFindableCls(),
-        theTrack.tpcCrossedRowsOverFindableCls(),
+        theTrack.dcaXY(),
         theTrack.eta(),
         theTrack.p(),
         theTrack.phi(),
         theTrack.pt(),
-        theTrack.dcaXY(),
+        theIsPositive,
+        theTrack.tpcCrossedRowsOverFindableCls(),
+        theTrack.tpcFoundOverFindableCls(),
         theTrack.tpcNClsCrossedRows(),
-        theTrack.tpcSignal(),
         theTrack.tpcNSigmaEl(),
-        theTrack.tpcNSigmaPi());
+        theTrack.tpcNSigmaPi(),
+        theTrack.tpcSignal());
     };
+
+    registry.fill(HIST("hCollisionZ"), theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
 
@@ -77,7 +87,11 @@ struct SkimmerMc {
 
   // SFS todo: make pretty and short
   template <typename TV0, typename TTRACK, typename TMC>
-  bool isConversionPhoton(const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, const TMC& theMcParticles)
+  bool isConversionPhoton(aod::Collisions::iterator const &theCollision,
+                          TV0 const                       &theV0, 
+                          TTRACK const                    &theTrackPos, 
+                          TTRACK const                    &theTrackNeg, 
+                          TMC const                       &theMcParticles)
   {
     bool result = false;
     // todo: verify it is enough to check only mother0 being equal
@@ -89,6 +103,8 @@ struct SkimmerMc {
     auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles_001>();
     auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles_001>();
 
+
+    // get all mc mothers from positive and negative tracks
     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
     std::vector<int> lMothers;
     // SFS todo: remove all those mothers_as<aod::McParticles_001>, are the loops even necesarry?
@@ -105,75 +121,100 @@ struct SkimmerMc {
     }
 
     // SFS verify theyre all the same category and remove
-    int lSame = 0;
+    int lMotherSameNess = 0;
     {
       if (lMothers.size() == 2) {
         if (lMothers[0] == lMothers[1]) {
           LOGF(info, "size2: 01");
-          lSame = 1;
+          lMotherSameNess = 1;
         }
       }
 
       if (lMothers.size() == 3) {
         if (lMothers[0] == lMothers[1]) {
           LOGF(info, "size3: 01");
-          lSame = 2;
+          lMotherSameNess = 2;
         }
         if (lMothers[0] == lMothers[2]) {
           LOGF(info, "size2: 02");
-          lSame = 3;
+          lMotherSameNess = 3;
         }
         if (lMothers[1] == lMothers[2]) {
           LOGF(info, "size2: 12");
-          lSame = 4;
+          lMotherSameNess = 4;
         }
       }
 
       if (lMothers.size() == 4) {
         if (lMothers[0] == lMothers[2]) {
           LOGF(info, "size4 02");
-          lSame = 4;
+          lMotherSameNess = 4;
         }
         if (lMothers[1] == lMothers[3]) {
           LOGF(info, "size4 13");
-          lSame = 5;
+          lMotherSameNess = 5;
         }
         if (lMothers[0] == lMothers[3]) {
           LOGF(info, "size4 03");
-          lSame = 6;
+          lMotherSameNess = 6;
         }
         if (lMothers[1] == lMothers[2]) {
           LOGF(info, "size4 12");
-          lSame = 7;
+          lMotherSameNess = 7;
         }
         if (lMothers[0] == lMothers[1]) {
           LOGF(info, "size4 01");
-          lSame = 8;
+          lMotherSameNess = 8;
         }
         if (lMothers[2] == lMothers[3]) {
           LOGF(info, "size4 23");
-          lSame = 9;
+          lMotherSameNess = 9;
         }
       }
     }
+    
+    registry.fill(HIST("hMotherSameNess"), 0.5 +  (float)lMotherSameNess);
 
-    if (lSame) {
+
+DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
+                  o2::soa::Index<>,
+                  mcparticle::McCollisionId,
+                  gammamctrue::Gamma,
+                  v0data::V0Id, // reference to reconstructed v0
+                  mcparticle::StatusCode, 
+                  mcparticle::Flags,
+                  mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+                  gammamctrue::NDaughters,
+
+    // if both tracks have exactly one and the same mother
+    if (lMotherSameNess==1) {
       // SFS todo: actually no loop required here, for this
-      for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+      //~ for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+        
+        auto &lMother = lMcNeg.template mothers_as<aod::McParticles>().begin();
 
         if ((result = lMother.pdgCode() == 22)) {
+          
+          //~ size_t lNDaughters = 0;
+          //~ if (lMother.has_daughters()) {
+            //~ for (auto &lDaughter : lMother.daughters_as<aod::McParticles>()) {
+              //~ ++lNDaughters;
+            //~ }
+          //~ }
+          size_t lNDaughters = lMother.daughters_as<aod::McParticles>().size();
+          
           fFuncTableV0InfoTrue(
+            theCollision.mcCollisionId()
+            lMother.globalIndex(),
             theV0.v0Id(),
-            lMcPos.vx(), lMcPos.vy(), lMcPos.vz(),
-            lMcPos.px(), lMcPos.py(), lMcPos.pz(),
-            lMcNeg.px(), lMcNeg.py(), lMcNeg.pz(),
-            lMother.px(), lMother.py(), lMother.pz(),
-            lMother.eta(),
-            lMother.p(),
-            lMother.phi(),
-            lMother.pt());
+            lMother.statusCode(),
+            lMother.flags(),
+            lMother.px(), lMother.py(), lMother.pz(), 
+            lMother.vx(), lMother.vy(), lMother.vz(), lMother.vt(), 
+            );
         }
-      }
+      //~ }
     }
     return result;
   }
@@ -181,5 +222,5 @@ struct SkimmerMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<SkimmerMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsMc>(cfgc)};
 }

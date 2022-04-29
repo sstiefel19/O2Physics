@@ -38,7 +38,7 @@ using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 struct skimmerGammaConversionsTruthOnlyMc {
 
-  Produces<aod::MCGammas> fFuncTableMcGammas;
+  Produces<aod::StoredMcGammasInfoTrue> fFuncTableMcGammas;
   Produces<aod::MCGammaDaughters> fFuncTableMcGammaDaughters;
   
   HistogramRegistry registry{
@@ -80,14 +80,24 @@ struct skimmerGammaConversionsTruthOnlyMc {
                                        lDaughter.pt());
           }
         }
-        fFuncTableMcGammas(lMcParticle.mcCollisionId(),
-                           lMcParticle.globalIndex(),
-                           lMcParticle.isPhysicalPrimary(),
-                           lNDaughters,
-                           lMcParticle.eta(),
-                           lMcParticle.p(),
-                           lMcParticle.phi(),
-                           lMcParticle.pt());
+        fFuncTableMcGammas(
+            lMcParticle.mcCollisionId(),
+            lMcParticle.globalIndex(),
+            -1,
+            lMcParticle.statusCode(),
+            lMcParticle.flags(),
+            lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(), 
+            lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(), 
+            lMcParticle.template daughters_as<aod::McParticles>().size());
+            
+        //~ fFuncTableMcGammas(lMcParticle.mcCollisionId(),
+                           //~ lMcParticle.globalIndex(),
+                           //~ lMcParticle.isPhysicalPrimary(),
+                           //~ lNDaughters,
+                           //~ lMcParticle.eta(),
+                           //~ lMcParticle.p(),
+                           //~ lMcParticle.phi(),
+                           //~ lMcParticle.pt());
       }
     }
   }

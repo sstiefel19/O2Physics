@@ -41,7 +41,7 @@ struct skimmerGammaConversionsMc {
   };
 
   Produces<aod::GammaConversionTracks> fFuncTableGammaTracks;
-  Produces<aod::GammaConversionsInfoTrue> fFuncTableV0InfoTrue;
+  Produces<aod::StoredMcGammasInfoTrue> fFuncTableV0InfoTrue;
   
   // ============================ FUNCTION DEFINITIONS ====================================================
   void process(aod::Collisions::iterator const &theCollision,
@@ -75,7 +75,8 @@ struct skimmerGammaConversionsMc {
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
 
-      bool lIsConversionPhoton = isConversionPhoton(lV0,
+      bool lIsConversionPhoton = isConversionPhoton(theCollision,
+                                                    lV0,
                                                     lTrackPos,
                                                     lTrackNeg,
                                                     theMcParticles);
@@ -100,21 +101,21 @@ struct skimmerGammaConversionsMc {
      * track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0
      */
 
-    auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles_001>();
-    auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles_001>();
+    auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles>();
+    auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles>();
 
 
     // get all mc mothers from positive and negative tracks
     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
     std::vector<int> lMothers;
     // SFS todo: remove all those mothers_as<aod::McParticles_001>, are the loops even necesarry?
-    for (auto& mP : lMcPos.template mothers_as<aod::McParticles_001>()) {
+    for (auto& mP : lMcPos.template mothers_as<aod::McParticles>()) {
       LOGF(info, "   mother index mP: %d", mP.globalIndex());
       lMothers.push_back(mP.globalIndex());
     }
 
     if (lMothers.size() > 0) {
-      for (auto& mN : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+      for (auto& mN : lMcNeg.template mothers_as<aod::McParticles>()) {
         LOGF(info, "   mother index mN: %d", mN.globalIndex());
         lMothers.push_back(mN.globalIndex());
       }
@@ -175,25 +176,11 @@ struct skimmerGammaConversionsMc {
     
     registry.fill(HIST("hMotherSameNess"), 0.5 +  (float)lMotherSameNess);
 
-
-DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
-                  o2::soa::Index<>,
-                  mcparticle::McCollisionId,
-                  gammamctrue::Gamma,
-                  v0data::V0Id, // reference to reconstructed v0
-                  mcparticle::StatusCode, 
-                  mcparticle::Flags,
-                  mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
-                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
-                  gammamctrue::NDaughters,
-
     // if both tracks have exactly one and the same mother
     if (lMotherSameNess==1) {
       // SFS todo: actually no loop required here, for this
-      //~ for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
-        
-        auto &lMother = lMcNeg.template mothers_as<aod::McParticles>().begin();
-
+      for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles>()) {
+        //~ auto &lMother = lMcNeg.template mothers_as<aod::McParticles>().begin();
         if ((result = lMother.pdgCode() == 22)) {
           
           //~ size_t lNDaughters = 0;
@@ -202,19 +189,28 @@ DECLARE_SOA_TABLE(GammaConversionsInfoTrue, "AOD", "V0INFOTRUE",
               //~ ++lNDaughters;
             //~ }
           //~ }
-          size_t lNDaughters = lMother.daughters_as<aod::McParticles>().size();
+          //~ size_t lNDaughters = lMother.daughters_as<aod::McParticles>().size();
+          /*mcparticle::McCollisionId,
+          gammamctrue::Gamma,
+          v0data::V0Id, // reference to reconstructed v0
+          mcparticle::StatusCode, 
+          mcparticle::Flags,
+          mcparticle::Px, mcparticle::Py, mcparticle::Pz,
+          mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+          gammamctrue::NDaughters,
+                  */
           
           fFuncTableV0InfoTrue(
-            theCollision.mcCollisionId()
+            -1, /*theCollision.mcCollisionId(),*/
             lMother.globalIndex(),
             theV0.v0Id(),
             lMother.statusCode(),
             lMother.flags(),
             lMother.px(), lMother.py(), lMother.pz(), 
             lMother.vx(), lMother.vy(), lMother.vz(), lMother.vt(), 
-            );
+            lMother.template daughters_as<aod::McParticles>().size());
         }
-      //~ }
+      }
     }
     return result;
   }

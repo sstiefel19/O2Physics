@@ -89,15 +89,6 @@ struct skimmerGammaConversionsTruthOnlyMc {
             lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(), 
             lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(), 
             lMcParticle.template daughters_as<aod::McParticles>().size());
-            
-        //~ fFuncTableMcGammas(lMcParticle.mcCollisionId(),
-                           //~ lMcParticle.globalIndex(),
-                           //~ lMcParticle.isPhysicalPrimary(),
-                           //~ lNDaughters,
-                           //~ lMcParticle.eta(),
-                           //~ lMcParticle.p(),
-                           //~ lMcParticle.phi(),
-                           //~ lMcParticle.pt());
       }
     }
   }

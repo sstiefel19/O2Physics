@@ -62,7 +62,7 @@ DECLARE_SOA_TABLE(StoredMcGammasInfoTrue, "AOD", "MCGAINFOTRUE",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId,
                   gammamctrue::Gamma,
-                  v0data::V0Id, // reference to reconstructed v0
+                  v0data::V0Id, // reference to reconstructed v0 (if its a task with reconstucted info)
                   mcparticle::StatusCode, 
                   mcparticle::Flags,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz,

@@ -221,53 +221,53 @@ struct GammaConversionsMc {
   }
 
   template <typename TV0, typename TMCGAMMATABLE>
-  void fillTruePhotonHistograms(std::string theBAC, TV0 const& theV0, float const& theV0CosinePA, TMCGAMMATABLE const& theTrueGammaTable)
+  void fillTruePhotonHistograms(std::string theBAC, TV0 const& theV0, float const& theV0CosinePA, TMCGAMMATABLE const& theMcPhotonForThisV0AsTable)
   {
-    if (!theTrueGammaTable.size()) {
+    if (!theMcPhotonForThisV0AsTable.size()) {
       return;
     }
-    auto lTrueGamma = theTrueGammaTable.begin();
-
-    fillV0Histograms(kTrue, theBAC, lTrueGamma, nullptr);
-    fillV0Histograms(kValRec, theBAC, theV0, &theV0CosinePA);
+    auto lMcPhoton = theMcPhotonForThisV0AsTable.begin();
+    
+    //~ fillV0Histograms(kTrue, theBAC, lMcPhoton, nullptr);
+    //~ fillV0Histograms(kValRec, theBAC, theV0, &theV0CosinePA);
 
     // v0 resolution histos
     {
       TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-      TVector3 lConvPointTrue(lTrueGamma.x(), lTrueGamma.y(), lTrueGamma.z());
+      TVector3 lConvPointTrue(lMcPhoton.conversionX(), lMcPhoton.conversionY(), lMcPhoton.conversionZ());
 
       std::string lPath(fPrefixResolutions + theBAC);
-      fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lTrueGamma.pt());
-      fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lTrueGamma.eta());
-      fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lTrueGamma.phi());
+      fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lMcPhoton.pt());
+      fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lMcPhoton.eta());
+      fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lMcPhoton.phi());
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
     }
   }
 
   void process(aod::Collisions::iterator const& theCollision,
-               aod::V0Datas const& theV0s,
-               aod::GammaConversionTracks const& theTracks,
-               aod::GammaConversionsInfoTrue const& theV0sTrue)
+               aod::V0Datas const& theV0s, 
+               aod::V0DaughterTracks const& theTracks,
+               aod::McGammasTrue const& theV0sTrue)
   {
     for (auto& lV0 : theV0s) {
 
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
-      auto lConvPhotonMCTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
+      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id()); // is a table that might be empty
 
       fillTruePhotonHistograms("beforeCuts/",
                                lV0,
                                lV0CosinePA,
-                               lConvPhotonMCTable);
+                               lMcPhotonForThisV0AsTable);
 
       if (!processPhoton(lV0, lV0CosinePA, theTracks)) {
         continue;
       }
 
-      fillTruePhotonHistograms("afterCuts/",
-                               lV0,
-                               lV0CosinePA,
-                               lConvPhotonMCTable);
+      //~ fillTruePhotonHistograms("afterCuts/",
+                               //~ lV0,
+                               //~ lV0CosinePA,
+                               //~ lMcPhotonForThisV0AsTable);
     }
   }
 

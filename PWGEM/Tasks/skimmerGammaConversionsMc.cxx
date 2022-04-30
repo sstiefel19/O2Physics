@@ -40,8 +40,8 @@ struct skimmerGammaConversionsMc {
     },
   };
 
-  Produces<aod::GammaConversionTracks> fFuncTableGammaTracks;
-  Produces<aod::StoredMcGammasInfoTrue> fFuncTableV0InfoTrue;
+  Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
+  Produces<aod::StoredMcGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   
   // ============================ FUNCTION DEFINITIONS ====================================================
   void process(aod::Collisions::iterator const &theCollision,
@@ -51,7 +51,7 @@ struct skimmerGammaConversionsMc {
                aod::McParticles const &theMcParticles)
   {
     auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
-      fFuncTableGammaTracks(
+      fFuncTableV0DaughterTracks(
         theV0.v0Id(),
         theIsFromConversionPhoton,
         theTrack.dcaXY(),
@@ -179,36 +179,34 @@ struct skimmerGammaConversionsMc {
     // if both tracks have exactly one and the same mother
     if (lMotherSameNess==1) {
       // SFS todo: actually no loop required here, for this
-      for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles>()) {
-        //~ auto &lMother = lMcNeg.template mothers_as<aod::McParticles>().begin();
-        if ((result = lMother.pdgCode() == 22)) {
+      for (auto& lMcMother : lMcNeg.template mothers_as<aod::McParticles>()) {
+        if ((result = lMcMother.pdgCode() == 22)) {
           
-          //~ size_t lNDaughters = 0;
-          //~ if (lMother.has_daughters()) {
-            //~ for (auto &lDaughter : lMother.daughters_as<aod::McParticles>()) {
-              //~ ++lNDaughters;
-            //~ }
-          //~ }
-          //~ size_t lNDaughters = lMother.daughters_as<aod::McParticles>().size();
-          /*mcparticle::McCollisionId,
-          gammamctrue::Gamma,
-          v0data::V0Id, // reference to reconstructed v0
-          mcparticle::StatusCode, 
-          mcparticle::Flags,
-          mcparticle::Px, mcparticle::Py, mcparticle::Pz,
-          mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
-          gammamctrue::NDaughters,
-                  */
+          auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
+          float lDaughter0Vx =-1.; 
+          float lDaughter0Vy =-1.; 
+          float lDaughter0Vz =-1.;
+          float lV0Radius = -1.;
+          if (lDaughters.size()){
+            auto lDaughter0 = lDaughters.begin();
+            lDaughter0Vx = lDaughter0.vx();
+            lDaughter0Vy = lDaughter0.vy(); 
+            lDaughter0Vz = lDaughter0.vz();
+            lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+          }
           
-          fFuncTableV0InfoTrue(
-            -1, /*theCollision.mcCollisionId(),*/
-            lMother.globalIndex(),
-            theV0.v0Id(),
-            lMother.statusCode(),
-            lMother.flags(),
-            lMother.px(), lMother.py(), lMother.pz(), 
-            lMother.vx(), lMother.vy(), lMother.vz(), lMother.vt(), 
-            lMother.template daughters_as<aod::McParticles>().size());
+          
+          fFuncTableMcGammasFromConfirmedV0s(
+            lMcMother.mcCollisionId(),
+            lMcMother.globalIndex(),
+            -1,
+            lMcMother.statusCode(),
+            lMcMother.flags(),
+            lMcMother.px(), lMcMother.py(), lMcMother.pz(), 
+            lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(), 
+            lDaughters.size(),
+            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
+            lV0Radius);
         }
       }
     }
@@ -216,7 +214,15 @@ struct skimmerGammaConversionsMc {
   }
 };
 
+//~ /// Extends the v0data table with expression columns
+//~ struct mcGammasTrueInitializer {
+  //~ Spawns<aod::McGammasTrue> mcgammastrue;
+  //~ void init(InitContext const&) {}
+//~ };
+
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsMc>(cfgc)/*,
+                      adaptAnalysisTask<mcGammasTrueInitializer>(cfgc)*/};
 }

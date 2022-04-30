@@ -38,8 +38,8 @@ using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 struct skimmerGammaConversionsTruthOnlyMc {
 
-  Produces<aod::StoredMcGammasInfoTrue> fFuncTableMcGammas;
-  Produces<aod::MCGammaDaughters> fFuncTableMcGammaDaughters;
+  Produces<aod::StoredMcGammasTrue> fFuncTableMcGammas;
+  Produces<aod::StoredMcGammaDaughtersTrue> fFuncTableMcGammaDaughters;
   
   HistogramRegistry registry{
     "registry",
@@ -57,8 +57,22 @@ struct skimmerGammaConversionsTruthOnlyMc {
     registry.fill(HIST("hMcCollisionZ"), theMcCollision.posZ());
     for (auto &lMcParticle : theMcParticles) {
       if (lMcParticle.pdgCode() == 22) {
+        
         size_t lNDaughters = 0;
+        float lDaughter0Vx =-1.; 
+        float lDaughter0Vy =-1.; 
+        float lDaughter0Vz =-1.;
+        float lV0Radius = -1.;
+        
         if (lMcParticle.has_daughters()) {
+          auto lDaughters = lMcParticle.daughters_as<aod::McParticles>();
+          lNDaughters = lDaughters.size();
+          auto lDaughter0 = lDaughters.begin();
+          lDaughter0Vx = lDaughter0.vx();
+          lDaughter0Vy = lDaughter0.vy(); 
+          lDaughter0Vz = lDaughter0.vz();
+          lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+          
           for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
             ++lNDaughters;
             
@@ -68,16 +82,14 @@ struct skimmerGammaConversionsTruthOnlyMc {
               registry.fill(HIST("hEtaDiff"), lEtaDiff);
             }
             
-            fFuncTableMcGammaDaughters(lMcParticle.mcCollisionId(),
+            fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
                                        lMcParticle.globalIndex(),
                                        //~ lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
                                        lDaughter.mothersIds().size(),
-                                       lDaughter.pdgCode(),
-                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(),
-                                       lDaughter.eta(),
-                                       lDaughter.p(),
-                                       lDaughter.phi(),
-                                       lDaughter.pt());
+                                       lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(), 
+                                       lDaughter.weight(),
+                                       lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
+                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
           }
         }
         fFuncTableMcGammas(
@@ -88,7 +100,9 @@ struct skimmerGammaConversionsTruthOnlyMc {
             lMcParticle.flags(),
             lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(), 
             lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(), 
-            lMcParticle.template daughters_as<aod::McParticles>().size());
+            lNDaughters,
+            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
+            lV0Radius);
       }
     }
   }

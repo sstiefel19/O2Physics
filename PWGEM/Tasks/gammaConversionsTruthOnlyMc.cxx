@@ -136,29 +136,6 @@ struct gammaConversionsTruthOnlyMc {
         
         fillConversionHistograms(lMcGamma);
         
-        // dont use this as probably im getting the wrong daughteres
-        /*
-        auto lDaughters = theMcGammaDaughters.sliceBy(aod::gammamctrue::motherId, lMcGamma.gamma());
-        if (lDaughters.size() != lNDaughters){
-          LOGF(warning, "SFS differing number of daughters. This should never happen. %d vs %d", lDaughters.size(), lNDaughters);
-          registry.fill(HIST("hPeculiarOccurences"), -0.5);
-        }
-        
-        size_t lNElectrons = 0;
-        for (auto &lDaughter : lDaughters) {
-          registry.fill(HIST("hPdgCodeDaughters"), 0.5 + lDaughter.pdgCode());
-          lNElectrons += std::abs(lDaughter.pdgCode()) == 11;
-        }
-        registry.fill(HIST("hNElectrons"), 0.5 + lNElectrons);
-        
-        // "regular" conversion
-        //~ if (lNElectrons == 2) {
-        if (lNElectrons >= 2) {
-          if (lNDaughters != 2) {
-            registry.fill(HIST("hPeculiarOccurences"), 0.5);
-          }
-        }
-        */
         
       }
     }

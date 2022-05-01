@@ -49,7 +49,6 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
 
 namespace gammamctrue
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //! Collision to which this McGamma belongs
 DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);    //! just a number that can be used to associate daughter particles with a gamma
 DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
 

@@ -30,11 +30,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
-
-
-// using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-//~ using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 struct skimmerGammaConversionsTruthOnlyMc {
 
@@ -81,8 +76,7 @@ struct skimmerGammaConversionsTruthOnlyMc {
               registry.fill(HIST("hEtaDiff"), lEtaDiff);
             }
             fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
-                                       lMcParticle.globalIndex(), // SFS check again if this the correct index! this might produce the strange distribution of R when it links to the wrong particles!
-                                       //~ lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
+                                       lMcParticle.globalIndex(), 
                                        lDaughter.mothersIds().size(),
                                        lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(), 
                                        lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),

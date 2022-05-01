@@ -75,8 +75,7 @@ struct skimmerGammaConversionsMc {
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
 
-      bool lIsConversionPhoton = isConversionPhoton(theCollision,
-                                                    lV0,
+      bool lIsConversionPhoton = isConversionPhoton(lV0,
                                                     lTrackPos,
                                                     lTrackNeg,
                                                     theMcParticles);
@@ -88,8 +87,7 @@ struct skimmerGammaConversionsMc {
 
   // SFS todo: make pretty and short
   template <typename TV0, typename TTRACK, typename TMC>
-  bool isConversionPhoton(aod::Collisions::iterator const &theCollision,
-                          TV0 const                       &theV0, 
+  bool isConversionPhoton(TV0 const                       &theV0, 
                           TTRACK const                    &theTrackPos, 
                           TTRACK const                    &theTrackNeg, 
                           TMC const                       &theMcParticles)

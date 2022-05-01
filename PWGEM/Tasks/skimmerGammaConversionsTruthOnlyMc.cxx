@@ -46,7 +46,6 @@ struct skimmerGammaConversionsTruthOnlyMc {
     {
       {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
-
     },
   };
   
@@ -74,20 +73,18 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
           
           for (auto &lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-            ++lNDaughters;
             
+            // SFS this can be removed once the eta integrity is checked
             TVector3 lDaughterVtx(lDaughter.vx(),lDaughter.vy(), lDaughter.vz());
             if (lMcParticle.isPhysicalPrimary()){
               float_t lEtaDiff = lDaughterVtx.Eta() - lMcParticle.eta();
               registry.fill(HIST("hEtaDiff"), lEtaDiff);
             }
-            
             fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
-                                       lMcParticle.globalIndex(),
+                                       lMcParticle.globalIndex(), // SFS check again if this the correct index! this might produce the strange distribution of R when it links to the wrong particles!
                                        //~ lDaughter.mothersIds().size() ? lDaughter.mothersIds()[0] : -1000, // SFS this is potentially unsafe, what if there are more mothers?, or could this still point to 0 even though it is a daughter? todo: make this cleaner
                                        lDaughter.mothersIds().size(),
                                        lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(), 
-                                       lDaughter.weight(),
                                        lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
                                        lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
           }
@@ -95,14 +92,13 @@ struct skimmerGammaConversionsTruthOnlyMc {
         fFuncTableMcGammas(
             lMcParticle.mcCollisionId(),
             lMcParticle.globalIndex(),
-            -1,
+            -1, // V0Id when running in reconstructed task
             lMcParticle.statusCode(),
             lMcParticle.flags(),
             lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(), 
             lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(), 
             lNDaughters,
             lMcParticle.eta(), lMcParticle.phi(), lMcParticle.p(), lMcParticle.pt(), lMcParticle.y(), 
-            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
             lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
             lV0Radius);
       }

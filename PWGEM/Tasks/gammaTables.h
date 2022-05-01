@@ -110,7 +110,6 @@ DECLARE_SOA_TABLE(McGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
                   gammamctrue::NMothers,
                   
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
-                  mcparticle::Weight,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
                   

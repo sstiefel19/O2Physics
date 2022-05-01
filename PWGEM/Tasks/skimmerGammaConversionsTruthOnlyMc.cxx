@@ -38,8 +38,8 @@ using tracksAndMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 struct skimmerGammaConversionsTruthOnlyMc {
 
-  Produces<aod::StoredMcGammasTrue> fFuncTableMcGammas;
-  Produces<aod::StoredMcGammaDaughtersTrue> fFuncTableMcGammaDaughters;
+  Produces<aod::McGammasTrue> fFuncTableMcGammas;
+  Produces<aod::McGammaDaughtersTrue> fFuncTableMcGammaDaughters;
   
   HistogramRegistry registry{
     "registry",
@@ -101,6 +101,8 @@ struct skimmerGammaConversionsTruthOnlyMc {
             lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(), 
             lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(), 
             lNDaughters,
+            lMcParticle.eta(), lMcParticle.phi(), lMcParticle.p(), lMcParticle.pt(), lMcParticle.y(), 
+            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
             lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
             lV0Radius);
       }

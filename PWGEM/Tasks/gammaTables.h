@@ -52,16 +52,17 @@ namespace gammamctrue
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //! Collision to which this McGamma belongs
 DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);    //! just a number that can be used to associate daughter particles with a gamma
 DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
-DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
-//~ DECLARE_SOA_EXPRESSION_COLUMN(Vr, vr, float, //! vertex 2d r
-                              //~ nsqrt(aod::mcparticle::vx* aod::mcparticle::vx +
-                                    //~ aod::mcparticle::vy * aod::mcparticle::vy));
+
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Y, y, float);
+
 DECLARE_SOA_COLUMN(ConversionX, conversionX, float);
 DECLARE_SOA_COLUMN(ConversionY, conversionY, float);
 DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float);
-
-
-
+DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 /*
 DECLARE_SOA_COLUMN(DistOverTotMom, distOverTotMom, float);
 DECLARE_SOA_COLUMN(DCAV0Daughters, dCAV0Daughters, float);
@@ -73,7 +74,7 @@ DECLARE_SOA_COLUMN(PsiPair, psiPair, float);
 */
 }
 
-DECLARE_SOA_TABLE(StoredMcGammasTrue, "AOD", "MCGATRUE",
+DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId,
                   gammamctrue::Gamma,
@@ -83,6 +84,8 @@ DECLARE_SOA_TABLE(StoredMcGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
                   gammamctrue::NDaughters,
+                  // todo: make those expression columns in an extended table
+                  gammamctrue::Eta, gammamctrue::Phi, gammamctrue::P, gammamctrue::Pt, gammamctrue::Y,
                   gammamctrue::ConversionX, gammamctrue::ConversionY, gammamctrue::ConversionZ,
                   gammamctrue::V0Radius,
             
@@ -92,23 +95,15 @@ DECLARE_SOA_TABLE(StoredMcGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
-                  
-DECLARE_SOA_EXTENDED_TABLE(McGammasTrue, StoredMcGammasTrue, "MCGATRUE", //! 
-                           mcparticle::Phi,
-                           mcparticle::Eta,
-                           mcparticle::Pt,
-                           mcparticle::P,
-                           mcparticle::Y);
-                           
                            
 namespace gammamctrue
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int, McGammasTrue, ""); // SFS do I need to worry of overflows?
+DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int64_t, McGammasTrue, ""); // SFS do I need to worry of overflows?
 DECLARE_SOA_COLUMN(NMothers, nMothers, int);
 }
 
 // table to hold mc truth information of daughter particles of MC gammas
-DECLARE_SOA_TABLE(StoredMcGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
+DECLARE_SOA_TABLE(McGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId, // SFS maybe drop since there is already a pointer to MCGammas which point to mccollision. But maybe still good to have for correct automatic grouping - not sure about that
                   gammamctrue::MotherId,
@@ -125,12 +120,5 @@ DECLARE_SOA_TABLE(StoredMcGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
                   mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>); 
-                  
-DECLARE_SOA_EXTENDED_TABLE(McGammaDaughtersTrue, StoredMcGammaDaughtersTrue, "MCGADAUGHTRUE", //! 
-                           mcparticle::Phi,
-                           mcparticle::Eta,
-                           mcparticle::Pt,
-                           mcparticle::P,
-                           mcparticle::Y);
 
 } // namespace o2::aod

@@ -41,7 +41,7 @@ struct skimmerGammaConversionsMc {
   };
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
-  Produces<aod::StoredMcGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
+  Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   
   // ============================ FUNCTION DEFINITIONS ====================================================
   void process(aod::Collisions::iterator const &theCollision,
@@ -199,12 +199,13 @@ struct skimmerGammaConversionsMc {
           fFuncTableMcGammasFromConfirmedV0s(
             lMcMother.mcCollisionId(),
             lMcMother.globalIndex(),
-            -1,
+            theV0.v0Id(),
             lMcMother.statusCode(),
             lMcMother.flags(),
             lMcMother.px(), lMcMother.py(), lMcMother.pz(), 
             lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(), 
             lDaughters.size(),
+            lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(), 
             lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
             lV0Radius);
         }
@@ -214,15 +215,7 @@ struct skimmerGammaConversionsMc {
   }
 };
 
-//~ /// Extends the v0data table with expression columns
-//~ struct mcGammasTrueInitializer {
-  //~ Spawns<aod::McGammasTrue> mcgammastrue;
-  //~ void init(InitContext const&) {}
-//~ };
-
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsMc>(cfgc)/*,
-                      adaptAnalysisTask<mcGammasTrueInitializer>(cfgc)*/};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsMc>(cfgc)};
 }

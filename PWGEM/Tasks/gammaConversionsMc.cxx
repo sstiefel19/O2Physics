@@ -223,13 +223,15 @@ struct GammaConversionsMc {
   template <typename TV0, typename TMCGAMMATABLE>
   void fillTruePhotonHistograms(std::string theBAC, TV0 const& theV0, float const& theV0CosinePA, TMCGAMMATABLE const& theMcPhotonForThisV0AsTable)
   {
+    LOGF(info, "SFS in fillTruePhotonHistograms");
     if (!theMcPhotonForThisV0AsTable.size()) {
       return;
     }
+    LOGF(info, "SFS true photon");
     auto lMcPhoton = theMcPhotonForThisV0AsTable.begin();
     
-    //~ fillV0Histograms(kTrue, theBAC, lMcPhoton, nullptr);
-    //~ fillV0Histograms(kValRec, theBAC, theV0, &theV0CosinePA);
+    fillV0HistogramsMcGamma(kTrue, theBAC, lMcPhoton, nullptr);
+    fillV0Histograms(kValRec, theBAC, theV0, &theV0CosinePA);
 
     // v0 resolution histos
     {
@@ -264,10 +266,10 @@ struct GammaConversionsMc {
         continue;
       }
 
-      //~ fillTruePhotonHistograms("afterCuts/",
-                               //~ lV0,
-                               //~ lV0CosinePA,
-                               //~ lMcPhotonForThisV0AsTable);
+      fillTruePhotonHistograms("afterCuts/",
+                               lV0,
+                               lV0CosinePA,
+                               lMcPhotonForThisV0AsTable);
     }
   }
 
@@ -340,6 +342,20 @@ struct GammaConversionsMc {
     }
     fillTH2(fRecTrueV0Histos[theRecTrue], lPath + "hArmenteros" + fRecTrueStrings[theRecTrue], theV0.alpha(), theV0.qtarm());
     fillTH2(fRecTrueV0Histos[theRecTrue], lPath + "hPsiPt" + fRecTrueStrings[theRecTrue], theV0.psipair(), theV0.pt());
+  }
+  
+  template <typename TMCGAMMA>
+  void fillV0HistogramsMcGamma(eRecTrueEnum theRecTrue, std::string const& theBAC, TMCGAMMA const& theMcGamma, float const* theV0CosinePA)
+  {
+    std::string lPath = fPrefixesV0HistosRecTrue[theRecTrue] + theBAC;
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hEta" + fRecTrueStrings[theRecTrue], theMcGamma.eta());
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPhi" + fRecTrueStrings[theRecTrue], theMcGamma.phi());
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPt" + fRecTrueStrings[theRecTrue], theMcGamma.pt());
+
+    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hConvPointR" + fRecTrueStrings[theRecTrue], theMcGamma.v0Radius());
+    if (theV0CosinePA) {
+      fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hCosPAngle" + fRecTrueStrings[theRecTrue], *theV0CosinePA);
+    }
   }
 
   template <typename T>

@@ -39,13 +39,13 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
                   gammatrackreco::P,
                   gammatrackreco::Phi,
                   gammatrackreco::Pt,
-                  gammatrackreco::PositivelyCharged,
+                  gammatrackreco::PositivelyCharged/*,
                   gammatrackreco::TpcCrossedRowsOverFindableCls,
                   gammatrackreco::TpcFoundOverFindableCls,
                   gammatrackreco::TpcNClsCrossedRows,
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCNSigmaPi,
-                  track::TPCSignal);
+                  track::TPCSignal*/);
 
 namespace gammamctrue
 {

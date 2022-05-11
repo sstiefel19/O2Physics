@@ -28,8 +28,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended>;
+using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels>;
 
 struct skimmerGammaConversions {
 
@@ -62,13 +62,13 @@ struct skimmerGammaConversions {
         theTrack.p(),
         theTrack.phi(),
         theTrack.pt(),
-        theIsPositive,
+        theIsPositive/*,
         theTrack.tpcCrossedRowsOverFindableCls(),
         theTrack.tpcFoundOverFindableCls(),
         theTrack.tpcNClsCrossedRows(),
         theTrack.tpcNSigmaEl(),
         theTrack.tpcNSigmaPi(),
-        theTrack.tpcSignal());
+        theTrack.tpcSignal()*/);
     };
 
     registry.fill(HIST("hCollisionZ"), theCollision.posZ());
@@ -101,13 +101,13 @@ struct skimmerGammaConversions {
         theTrack.p(),
         theTrack.phi(),
         theTrack.pt(),
-        theIsPositive,
+        theIsPositive/*,
         theTrack.tpcCrossedRowsOverFindableCls(),
         theTrack.tpcFoundOverFindableCls(),
         theTrack.tpcNClsCrossedRows(),
         theTrack.tpcNSigmaEl(),
         theTrack.tpcNSigmaPi(),
-        theTrack.tpcSignal());
+        theTrack.tpcSignal()*/);
     };
 
     registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());

@@ -391,11 +391,11 @@ struct GammaConversions {
       fillTH1(fTrackHistos, lPath + "hTrackEta" + lSuffix, theTrack.eta());
       fillTH1(fTrackHistos, lPath + "hTrackPhi" + lSuffix, theTrack.phi());
       fillTH1(fTrackHistos, lPath + "hTrackPt" + lSuffix, theTrack.pt());
-      fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls" + lSuffix, theTrack.tpcFoundOverFindableCls());
+      /*fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls" + lSuffix, theTrack.tpcFoundOverFindableCls());
       fillTH1(fTrackHistos, lPath + "hTPCCrossedRowsOverFindableCls" + lSuffix, theTrack.tpcCrossedRowsOverFindableCls());
       fillTH2(fTrackHistos, lPath + "hTPCdEdxSigEl" + lSuffix, theTrack.p(), theTrack.tpcNSigmaEl());
       fillTH2(fTrackHistos, lPath + "hTPCdEdxSigPi" + lSuffix, theTrack.p(), theTrack.tpcNSigmaPi());
-      fillTH2(fTrackHistos, lPath + "hTPCdEdx" + lSuffix, theTrack.p(), theTrack.tpcSignal());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdx" + lSuffix, theTrack.p(), theTrack.tpcSignal());*/
     };
 
     for (auto& lTrack : theV0Tracks) {
@@ -453,7 +453,7 @@ struct GammaConversions {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
       return kFALSE;
     }
-
+/*
     if (!(selectionPIDTPC_track(theTrack))) {
       return kFALSE;
     }
@@ -466,7 +466,7 @@ struct GammaConversions {
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
       fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCCrossedRowsOverFindableCls"));
       return kFALSE;
-    }
+    }*/
     return kTRUE;
   }
 
@@ -521,7 +521,7 @@ struct GammaConversions {
     }
     return kTRUE;
   }
-
+/*
   template <typename T>
   bool selectionPIDTPC_track(const T& theTrack)
   {
@@ -549,7 +549,7 @@ struct GammaConversions {
       }
     }
     return kTRUE;
-  }
+  }*/
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

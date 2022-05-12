@@ -48,6 +48,9 @@ DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative pron
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
 
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! V0 p
+                           [](float Px, float Py, float Pz) -> float { return RecoDecay::sqrtSumOfSquares(Px, Py, Pz); });
+
 // Length quantities
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //! V0 decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
@@ -142,6 +145,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
 
                        // Dynamic columns
+                       v0data::P<v0data::Px, v0data::Py, v0data::Pz>,
                        v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::V0Radius<v0data::X, v0data::Y>,
                        v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,

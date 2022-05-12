@@ -82,6 +82,7 @@ struct GammaConversions {
 
   // v0 histograms
   std::vector<MyHistogramSpec> fV0HistoDefinitions{
+    {"hP", "hP;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
     {"hPt", "hPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
     {"hEta", "hEta;#eta;counts", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
     {"hPhi", "hPhi;#phi;counts", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
@@ -413,6 +414,7 @@ struct GammaConversions {
     };
     fillTH1(lContainer, fullName("hEta"), theV0.eta());
     fillTH1(lContainer, fullName("hPhi"), theV0.phi());
+    fillTH1(lContainer, fullName("hP"), theV0.p());
     fillTH1(lContainer, fullName("hPt"), theV0.pt());
     fillTH1(lContainer, fullName("hConvPointR"), theV0.v0radius());
     fillTH1(lContainer, fullName("hCosPAngle"), theV0CosinePA);
@@ -432,6 +434,7 @@ struct GammaConversions {
     };
     fillTH1(lContainer, fullName("hEta"), theMcGamma.eta());
     fillTH1(lContainer, fullName("hPhi"), theMcGamma.phi());
+    fillTH1(lContainer, fullName("hP"), theMcGamma.p());
     fillTH1(lContainer, fullName("hPt"), theMcGamma.pt());
     fillTH1(lContainer, fullName("hConvPointR"), theMcGamma.v0Radius());
   }

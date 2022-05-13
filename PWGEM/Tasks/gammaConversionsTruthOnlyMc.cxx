@@ -150,7 +150,7 @@ struct gammaConversionsTruthOnlyMc {
 
       int const lNDaughters = lMcGamma.nDaughters();
       registry.fill(HIST("hNDaughters_MCTrue"), 0.5 + lNDaughters);
-      if (lNDaughters == 2) {
+      if (lNDaughters >= 2) {
 
         fillConversionHistograms(lMcGamma);
       }

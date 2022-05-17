@@ -91,6 +91,9 @@ struct GammaConversions {
     {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
     {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
 
+    {"hWithinMcAccP", "hWithinMcAccPP;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
+    {"hWithinMcAccPt", "hWithinMcAccPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
+
     {"IsPhotonSelected", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}} // only in afterCuts
   };
 
@@ -283,6 +286,16 @@ struct GammaConversions {
     }
     auto lMcPhoton = theMcPhotonForThisV0AsTable.begin();
 
+    if (lMcPhoton.isPhysicalPrimary() && std::abs(lMcPhoton.eta()) <= 0.8) { // SFS todo dont harcode
+      mapStringHistPtr& lContainer = fRecTrueV0Histos[kMCTrue];
+      std::string lPath = fPrefixesV0HistosRecTrue[kMCTrue] + theBAC;
+      std::string& lSuffix = fRecTrueStrings[kMCTrue];
+      auto fullName = [&lPath, &lSuffix](std::string theName) {
+        return lPath + theName + lSuffix;
+      };
+      fillTH1(lContainer, fullName("hWithinMcAccP"), lMcPhoton.p());
+      fillTH1(lContainer, fullName("hWithinMcAccPt"), lMcPhoton.pt());
+    }
     fillV0HistogramsMcGamma(kMCTrue, theBAC, lMcPhoton);
     fillV0Histograms(kMCVal, theBAC, theV0, theV0CosinePA);
 

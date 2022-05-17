@@ -125,7 +125,7 @@ struct gammaConversionsTruthOnlyMc {
       return false;
     }
 
-    if (std::abs(theMcGamma.eta()) >= fEtaMax) { // SFS todo: track v0 eta??
+    if (std::abs(theMcGamma.eta()) > fEtaMax) {
       // fill histo
       return false;
     }

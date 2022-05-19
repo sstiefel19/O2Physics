@@ -60,7 +60,7 @@ struct GammaConversions {
   // define this in order to have a constructor of the HistogramSpec which copies the name into the title
   struct MyHistogramSpec {
     MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
-      : m{name_, title_, config_, callSumw2_}, fDataOnly{dataOnly_} {}
+      : m{name_, title_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
     MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
       : m{name_, name_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
     HistogramSpec m{};
@@ -103,16 +103,50 @@ struct GammaConversions {
     {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;euclidean distance (cm);counts", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
   };
 
-  enum eRecTrueEnum { kRec,
-                      kMCTrue,
-                      kMCVal };
+  enum eV0HistoFlavor { kRec, kMCTrue, kMCVal, kRes };
 
   typedef std::map<std::string, HistPtr> mapStringHistPtr;
   mapStringHistPtr fCollisionHistos;
   mapStringHistPtr fTrackHistos;
   mapStringHistPtr fV0ResolutionHistos;
   mapStringHistPtr fSpecialHistos;
+
   std::vector<mapStringHistPtr> fRecTrueV0Histos{3};
+
+/*
+  struct tKind {
+  mapStringHistPtr  mRec;
+  mapStringHistPtr  mTrue
+  mapStringHistPtr  mVal;
+  mapStringHistPtr  mRes
+  };
+
+  struct tRejected{
+    mEta;
+    mPhysPrim;
+    mSum;
+  };
+
+  struct tCutsMc{
+    mBeforeCuts;
+    mAfterCuts;
+    mRejected;
+  };
+*/
+  struct tCutsRec {
+  //~ mapStringHistPtr  mBeforeCuts{};
+  //~ mapStringHistPtr  mAfterCuts{};
+
+  mapStringHistPtr mBeforeAfter[2]{};
+
+  };
+
+  struct tV0Registry {
+    tCutsRec mCutsRec{};
+  //  tCutsMc mCutsMc{};
+  };
+
+  tV0Registry fV0Registry{};
 
   std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
   std::string fPathRec{"Rec/"};
@@ -193,6 +227,27 @@ struct GammaConversions {
       }
     };
 
+    auto addHistosToRegistryNew = [&](auto& theContainer, auto const& theHistoDefinitions, std::string const& thePath, std::string* theSuffix = nullptr) {
+      for (auto& tHisto : theHistoDefinitions) {
+        if (!doprocessMc && tHisto.fDataOnly) {
+          continue;
+        }
+        std::string lFullName(thePath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
+        LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
+        HistPtr lHistPtr = fHistogramRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
+        theContainer.insert(std::pair{tHisto.m.name, lHistPtr});
+
+        // todo ugly: remove
+        if (theSuffix) {
+          if (tHisto.m.config.type == kTH1F) {
+            appendSuffixToTitle<TH1>(lHistPtr, theSuffix);
+          } else if (tHisto.m.config.type == kTH2F) {
+            appendSuffixToTitle<TH2>(lHistPtr, theSuffix);
+          }
+        }
+      }
+    };
+
     auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
       auto lHisto = theContainer.find(theHistoName);
       if (lHisto != theContainer.end()) {
@@ -216,7 +271,7 @@ struct GammaConversions {
     // do some labeling
     addLablesToHisto(fSpecialHistos, fFullNameIsPhotonSelectedHisto, fPhotonCutIndeces);
 
-
+    int i = 0;
     for (auto bac : std::vector<std::string>{"beforeRecCuts/", "afterRecCuts/"}) {
 
       // collision histograms
@@ -232,7 +287,7 @@ struct GammaConversions {
                           &fRecTrueStrings[kRec]);
 
       // v0 histograms
-      std::vector<eRecTrueEnum> lRecTrue{kRec};
+      std::vector<eV0HistoFlavor> lRecTrue{kRec};
       if (doprocessMc) {
         lRecTrue.push_back(kMCTrue);
         lRecTrue.push_back(kMCVal);
@@ -246,11 +301,17 @@ struct GammaConversions {
       }
 
       for (auto iRecTrue : lRecTrue) {
-        addHistosToRegistry(fRecTrueV0Histos[iRecTrue],
-                            fV0HistoDefinitions,
-                            fPathsV0Histos[iRecTrue] + bac,
-                            &fRecTrueStrings[iRecTrue]);
+        //~ addHistosToRegistry(fRecTrueV0Histos[iRecTrue],
+                            //~ fV0HistoDefinitions,
+                            //~ fPathsV0Histos[iRecTrue] + bac,
+                            //~ &fRecTrueStrings[iRecTrue]);
+
+        addHistosToRegistryNew(fV0Registry.mCutsRec.mBeforeAfter[i],
+                               fV0HistoDefinitions,
+                               fPathsV0Histos[iRecTrue] + bac,
+                               &fRecTrueStrings[iRecTrue]);
       }
+      ++i;
     }
   }
 
@@ -301,25 +362,37 @@ struct GammaConversions {
     if (theMcPhotonForThisV0AsTable.begin() == theMcPhotonForThisV0AsTable.end()) {
       return false;
     }
-
     auto const lMcPhoton = theMcPhotonForThisV0AsTable.begin();
-    fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhotonIn", true /*theMcCuts*/));
 
-    if (!lMcPhoton.isPhysicalPrimary()) {
-      fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhysicalPrimary", true /*theMcCuts*/));
-      return false;
+    // here we could fill MC/v0_beforeMcCuts and beforeRecCuts (we know that we are beforeRecCuts)
+    //~ fillTruePhotonHistograms(lMcPhoton,
+                             //~ theV0,
+                             //~ theV0CosinePA,
+                             //~ "beforeRecCuts/",
+                             //~ "beforeMcCuts/");
+
+    {
+      fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhotonIn", true /*theMcCuts*/));
+
+      if (!lMcPhoton.isPhysicalPrimary()) {
+        fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhysicalPrimary", true /*theMcCuts*/));
+        return false;
+      }
+
+      if (std::abs(lMcPhoton.eta()) > fTruePhotonEtaMax) {
+        fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcEta", true /*theMcCuts*/));
+        return false;
+      }
+      fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhotonOut", true /*theMcCuts*/));
     }
 
-    if (std::abs(lMcPhoton.eta()) > fTruePhotonEtaMax) {
-      fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcEta", true /*theMcCuts*/));
-      return false;
-    }
-    fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhotonOut", true /*theMcCuts*/));
+    // here we could fill MC/v0_afterMcCuts and beforeRecCuts (we know that we are beforeRecCuts)
 
     fillTruePhotonHistograms(lMcPhoton,
                              theV0,
                              theV0CosinePA,
-                             "beforeRecCuts/");
+                             "beforeRecCuts/"/*,
+                             "afterMcCuts/"*/);
     return true;
   }
 
@@ -447,7 +520,19 @@ struct GammaConversions {
   }
 
   template <typename TV0>
-  void fillV0Histograms(eRecTrueEnum theRecTrue, std::string const& theBAC, TV0 const& theV0, float const& theV0CosinePA)
+  void fillV0HistogramsNew(mapStringHistPtr& theContainer, TV0 const& theV0, float const& theV0CosinePA)
+  {
+    fillTH1(theContainer, std::string("hEta"), theV0.eta());
+    fillTH1(theContainer, std::string("hPhi"), theV0.phi());
+    fillTH1(theContainer, std::string("hPt"), theV0.pt());
+    fillTH1(theContainer, std::string("hConvPointR"), theV0.v0radius());
+    fillTH1(theContainer, std::string("hCosPAngle"), theV0CosinePA);
+    fillTH2(theContainer, std::string("hArmenteros"), theV0.alpha(), theV0.qtarm());
+    fillTH2(theContainer, std::string("hPsiPt"), theV0.psipair(), theV0.pt());
+  }
+
+  template <typename TV0>
+  void fillV0Histograms(eV0HistoFlavor theRecTrue, std::string const& theBAC, TV0 const& theV0, float const& theV0CosinePA)
   {
     mapStringHistPtr& lContainer = fRecTrueV0Histos[theRecTrue];
     std::string lPath = fPathsV0Histos[theRecTrue] + theBAC;
@@ -466,7 +551,7 @@ struct GammaConversions {
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
   template <typename TMCGAMMA>
-  void fillV0HistogramsMcGamma(eRecTrueEnum theRecTrue, std::string const& theBAC, TMCGAMMA const& theMcGamma)
+  void fillV0HistogramsMcGamma(eV0HistoFlavor theRecTrue, std::string const& theBAC, TMCGAMMA const& theMcGamma)
   {
     mapStringHistPtr& lContainer = fRecTrueV0Histos[theRecTrue];
     std::string lPath = fPathsV0Histos[theRecTrue] + theBAC;
@@ -541,7 +626,8 @@ struct GammaConversions {
   void fillReconstructedInfoHistograms(std::string theBAC, TV0 const& theV0, TTRACKS const& theV0Tracks, float const& theV0CosinePA)
   {
     fillTrackHistograms(theBAC, theV0Tracks);
-    fillV0Histograms(kRec, theBAC, theV0, theV0CosinePA);
+    //~ fillV0Histograms(kRec, theBAC, theV0, theV0CosinePA);
+    fillV0HistogramsNew(fV0Registry.mCutsRec.mBeforeAfter[ (theBAC == "beforeRecCuts/") ? 0 : 1], theV0, theV0CosinePA);
 
     if (theBAC == "beforeRecCuts/") {
       fillTH1(fSpecialHistos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));

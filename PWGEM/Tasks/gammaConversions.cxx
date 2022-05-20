@@ -104,6 +104,7 @@ struct GammaConversions {
   };
 
   enum eV0HistoFlavor { kRec, kMCTrue, kMCVal, kRes };
+  //~ enum eV0HistoKind { kRec, kMCTrue, kMCVal, kRes };
 
   typedef std::map<std::string, HistPtr> mapStringHistPtr;
   mapStringHistPtr fCollisionHistos;
@@ -114,41 +115,100 @@ struct GammaConversions {
   std::vector<mapStringHistPtr> fRecTrueV0Histos{3};
 
 /*
-  struct tKind {
-  mapStringHistPtr  mRec;
-  mapStringHistPtr  mTrue
-  mapStringHistPtr  mVal;
-  mapStringHistPtr  mRes
+  struct tCutsRec {
+    tCutsRec(std::string thePath) : mPath{thePath} {}
+    std::string mPath{};
+    mapStringHistPtr mContainer{};
+  };
+  struct tV0Rec {
+    tV0Rec(std::string thePath) : mPath{thePath} {}
+    std::string mPath{};
+    tCutsRec mBeforeAfterRec[2]{ mPath + "beforeRec/", mPath + "afterRec/"};
   };
 
-  struct tRejected{
-    mEta;
-    mPhysPrim;
-    mSum;
+  struct tRec{
+    tRec(std::string thePath) : mPath{thePath} {}
+    std::string mPath{};
+    tV0Rec         mV0{mPath + "v0/"};
+     //~ tCollision  mCollision
+    //~ tTrack      mTrack*/
+
+
+  struct tV0Kind {
+    tV0Kind(std::string thePath) : mPath{thePath} {}
+
+    template <typename T>
+    void appendSuffixToTitleI(HistPtr& theHistPtr, std::string* theSuffix)
+    {
+      auto lHisto = std::get<std::shared_ptr<T>>(theHistPtr);
+      if (lHisto) {
+        std::string lTitle(lHisto->GetTitle());
+        lHisto->SetTitle(lTitle.append(*theSuffix).data());
+      } else {
+        LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained in order to append suffix to title.");
+      }
+    }
+
+    void addHistosToOfficalRegistry(HistogramRegistry& theOfficialRegistry,
+                                    std::vector<MyHistogramSpec> const& theHistoDefinitions,
+                                    std::string* theSuffix = nullptr) {
+      for (auto& tHisto : theHistoDefinitions) {
+        std::string lFullName(mPath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
+        LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
+        HistPtr lHistPtr = theOfficialRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
+        mContainer.insert(std::pair{tHisto.m.name, lHistPtr});
+
+        // todo ugly: remove
+        if (theSuffix) {
+          if (tHisto.m.config.type == kTH1F) {
+            appendSuffixToTitleI<TH1>(lHistPtr, theSuffix);
+          } else if (tHisto.m.config.type == kTH2F) {
+            appendSuffixToTitleI<TH2>(lHistPtr, theSuffix);
+          }
+        }
+      }
+    }
+
+    std::string mPath{};
+    mapStringHistPtr mContainer{};
+  };
+
+ struct tMotherDirV0Kinds{
+    tMotherDirV0Kinds(std::string thePath) : mPath{thePath} {}
+    std::string mPath{""};
+    std::vector<tV0Kind> mV0Kind{ mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/" } ;
+    //~ tV0Kind mV0Kind[4]{ mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/" } ;
   };
 
   struct tCutsMc{
-    mBeforeCuts;
-    mAfterCuts;
-    mRejected;
-  };
-*/
-  struct tCutsRec {
-  //~ mapStringHistPtr  mBeforeCuts{};
-  //~ mapStringHistPtr  mAfterCuts{};
-
-  mapStringHistPtr mBeforeAfter[2]{};
-
+    tCutsMc(std::string thePath) : mPath{thePath} {}
+    std::string mPath{""}; // v0/beforeMcCuts/ or v0/afterMcCuts/
+    std::vector<tMotherDirV0Kinds>  mBeforeAfterRecInMc{ mPath + "beforeRec/", mPath + "afterRec/"};
   };
 
-  struct tV0Registry {
-    tCutsRec mCutsRec{};
-  //  tCutsMc mCutsMc{};
+  struct tV0{
+    tV0(std::string thePath) : mPath{thePath} {}
+    std::string mPath{""}; // V0/
+    std::vector<tCutsMc> mBeforeAfterMc{ mPath + "beforeMcCuts/", mPath + "afterMcCuts/"};
+    //~ tCutsMc mRejected[3]{ mPath + "v0_beforeMcCuts", mPath + "v0_afterMcCuts/" }; // eta physPrim sum
+
   };
 
-  tV0Registry fV0Registry{};
+  struct tHistoRegistry {
+    tHistoRegistry(std::string thePath) : mPath{thePath} {}
+    //~ tCollision  tCollision{mPath + "Collision/"};
+    //~ tTrack      tTrack    {mPath + "Track/"};
+    std::string mPath{""};
+    tV0         mV0       {mPath + "V0/"};
+  };
+  tHistoRegistry fMyRegistry{""};
+
+
 
   std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
+
+  std::vector<std::string> fMcSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
+
   std::string fPathRec{"Rec/"};
   std::string fPathMc{"MC/"};
 
@@ -227,26 +287,26 @@ struct GammaConversions {
       }
     };
 
-    auto addHistosToRegistryNew = [&](auto& theContainer, auto const& theHistoDefinitions, std::string const& thePath, std::string* theSuffix = nullptr) {
-      for (auto& tHisto : theHistoDefinitions) {
-        if (!doprocessMc && tHisto.fDataOnly) {
-          continue;
-        }
-        std::string lFullName(thePath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
-        LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
-        HistPtr lHistPtr = fHistogramRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
-        theContainer.insert(std::pair{tHisto.m.name, lHistPtr});
+    //~ auto addHistosToRegistryNew = [&](auto& theCuts, auto const& theHistoDefinitions, std::string* theSuffix = nullptr) {
+      //~ for (auto& tHisto : theHistoDefinitions) {
+        //~ if (!doprocessMc && tHisto.fDataOnly) {
+          //~ continue;
+        //~ }
+        //~ std::string lFullName(theCuts.mPath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
+        //~ LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
+        //~ HistPtr lHistPtr = fHistogramRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
+        //~ theCuts.mContainer.insert(std::pair{tHisto.m.name, lHistPtr});
 
-        // todo ugly: remove
-        if (theSuffix) {
-          if (tHisto.m.config.type == kTH1F) {
-            appendSuffixToTitle<TH1>(lHistPtr, theSuffix);
-          } else if (tHisto.m.config.type == kTH2F) {
-            appendSuffixToTitle<TH2>(lHistPtr, theSuffix);
-          }
-        }
-      }
-    };
+        //~ // todo ugly: remove
+        //~ if (theSuffix) {
+          //~ if (tHisto.m.config.type == kTH1F) {
+            //~ appendSuffixToTitle<TH1>(lHistPtr, theSuffix);
+          //~ } else if (tHisto.m.config.type == kTH2F) {
+            //~ appendSuffixToTitle<TH2>(lHistPtr, theSuffix);
+          //~ }
+        //~ }
+      //~ }
+    //~ };
 
     auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
       auto lHisto = theContainer.find(theHistoName);
@@ -271,7 +331,7 @@ struct GammaConversions {
     // do some labeling
     addLablesToHisto(fSpecialHistos, fFullNameIsPhotonSelectedHisto, fPhotonCutIndeces);
 
-    int i = 0;
+
     for (auto bac : std::vector<std::string>{"beforeRecCuts/", "afterRecCuts/"}) {
 
       // collision histograms
@@ -285,34 +345,25 @@ struct GammaConversions {
                           fTrackHistoDefinitions,
                           fPathRecTrackHistos + bac,
                           &fRecTrueStrings[kRec]);
-
-      // v0 histograms
-      std::vector<eV0HistoFlavor> lRecTrue{kRec};
-      if (doprocessMc) {
-        lRecTrue.push_back(kMCTrue);
-        lRecTrue.push_back(kMCVal);
-
-        // v0 Resolution histos
-        addHistosToRegistry(fV0ResolutionHistos,
-                            fV0ResolutionHistoDefinitions,
-                            fPathResolutions + bac);
-
-        addLablesToHisto(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, fMcPhotonCutIndeces);
-      }
-
-      for (auto iRecTrue : lRecTrue) {
-        //~ addHistosToRegistry(fRecTrueV0Histos[iRecTrue],
-                            //~ fV0HistoDefinitions,
-                            //~ fPathsV0Histos[iRecTrue] + bac,
-                            //~ &fRecTrueStrings[iRecTrue]);
-
-        addHistosToRegistryNew(fV0Registry.mCutsRec.mBeforeAfter[i],
-                               fV0HistoDefinitions,
-                               fPathsV0Histos[iRecTrue] + bac,
-                               &fRecTrueStrings[iRecTrue]);
-      }
-      ++i;
     }
+
+    /*enum eV0HistoKind { kRec kMCTrue, kMCVal, kRes };*/
+    for (size_t iBaR = 0; iBaR < 2; ++iBaR) {
+
+        for (size_t iBaM = 0; iBaM < (doprocessMc ? 2 : 1); ++iBaM ){
+          for (size_t iMcKind = 0; iMcKind < (doprocessMc ? 4 : 1); ++iMcKind) {
+            //~ addHistosToRegistryNew(fMyRegistry.mV0.mBeforeAfterMc[iBaM].mBeforeAfterRecInMc[iBaR].mV0Kind[iMcKind],
+                                   //~ (iMcKind < 3) ? fV0HistoDefinitions : fV0ResolutionHistoDefinitions ,
+                                   //~ &fMcSuffixes[iMcKind]);
+
+            fMyRegistry.mV0.mBeforeAfterMc[iBaM].mBeforeAfterRecInMc[iBaR].mV0Kind[iMcKind].
+              addHistosToOfficalRegistry(fHistogramRegistry,
+                                        (iMcKind < 3) ? fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
+                                        &fMcSuffixes[iMcKind]);
+          }
+        }
+    }
+        //~ addLablesToHisto(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, fMcPhotonCutIndeces);
   }
 
   // SFS todo: think about if this is actually too expensive. Going the other way round with the indices as keys wouldnt require lookups at inserting but pbly produce a but of code duplication at the definition of the cut names
@@ -627,7 +678,10 @@ struct GammaConversions {
   {
     fillTrackHistograms(theBAC, theV0Tracks);
     //~ fillV0Histograms(kRec, theBAC, theV0, theV0CosinePA);
-    fillV0HistogramsNew(fV0Registry.mCutsRec.mBeforeAfter[ (theBAC == "beforeRecCuts/") ? 0 : 1], theV0, theV0CosinePA);
+
+    fillV0HistogramsNew(fMyRegistry.mV0.mBeforeAfterMc[0].mBeforeAfterRecInMc[(theBAC == "beforeRecCuts/") ? 0 : 1].mV0Kind[kRec].mContainer, theV0, theV0CosinePA); // todo correct [0]!
+
+    //~ fillV0HistogramsNew(fMyRegistry.mV0.mBeforeAfterMc[0].mBeforeAfterRec[(theBAC == "beforeRecCuts/") ? 0 : 1].mContainer, theV0, theV0CosinePA); // todo correct [0]!
 
     if (theBAC == "beforeRecCuts/") {
       fillTH1(fSpecialHistos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));

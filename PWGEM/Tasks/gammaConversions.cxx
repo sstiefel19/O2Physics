@@ -428,10 +428,14 @@ struct GammaConversions {
       fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcEta", true /*theMcCuts*/));
       return false;
     }
+    return true;
   }
 
-  template <typename TV0, typename TMCGAMMATABLE>
-  bool processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable, TV0 const& theV0, float const& theV0CosinePA)
+  template <typename TV0, typename TMCGAMMATABLE, typename TTRACKS>
+  bool processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable,
+                       TV0 const& theV0,
+                       float const& theV0CosinePA,
+                       TTRACKS const& theTwoV0Daughters)
   {
     fillTH1(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, getPhotonCutIndex("kMcPhotonIn", true /*theMcCuts*/));
 
@@ -451,17 +455,18 @@ struct GammaConversions {
                       kBeforeRecCuts,
                       lMcPhoton,
                       theV0,
-                      theV0CosinePA);
+                      theV0CosinePA,
+                      theTwoV0Daughters);
     return true;
   }
 
   template <typename TV0, typename TMCGAMMA, typename TTRACKS> // use enumtypes?
-  void fillAllHistgrams(int theBefAftMc,
-                        int theBefAftRec,
-                        TMCGAMMA const& theMcPhoton,
-                        TV0 const& theV0,
-                        TTRACKS const& theTwoV0Daughters,
-                        float const& theV0CosinePA)
+  void fillAllHistograms(int theBefAftMc,
+                         int theBefAftRec,
+                         TMCGAMMA const& theMcPhoton,
+                         TV0 const& theV0,
+                         float const& theV0CosinePA,
+                         TTRACKS const& theTwoV0Daughters)
   {
 
     fillReconstructedInfoHistograms(
@@ -547,7 +552,7 @@ struct GammaConversions {
       // is a table that might be empty
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
 
-      bool lValidatedMcPhoton = processMcPhoton(lMcPhotonForThisV0AsTable, lV0, lV0CosinePA);
+      bool lValidatedMcPhoton = processMcPhoton(lMcPhotonForThisV0AsTable, lV0, lV0CosinePA, lTwoV0Daughters);
 
       bool lV0PassesCuts = processPhoton(lV0, lV0CosinePA, lTwoV0Daughters);
 
@@ -556,7 +561,8 @@ struct GammaConversions {
                           kAfterRecCuts,
                           lMcPhotonForThisV0AsTable.begin(), /*safe since lValidatedMcPhoton*/
                           lV0,
-                          lV0CosinePA);
+                          lV0CosinePA,
+                          lTwoV0Daughters);
       }
     }
   }

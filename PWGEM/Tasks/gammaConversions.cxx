@@ -135,7 +135,7 @@ struct GammaConversions {
   std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
   std::vector<std::string> fMcSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
 
-  enum eBeforeAfterMcCuts { kBeforeMcCuts, kAfterMcCuts };
+  //~ enum eBeforeAfterMcCuts { kBeforeMcCuts, kAfterMcCuts };
   enum eBeforeAfterRecCuts { kBeforeRecCuts, kAfterRecCuts };
   enum eV0HistoFlavor { kRec, kMCTrue, kMCVal, kRes };
 
@@ -184,15 +184,13 @@ struct GammaConversions {
     tMotherDirV0Kinds(std::string thePath) : mPath{thePath} {}
     std::string mPath{""};
     tV0Kind mV0Kind[4]{ mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/" } ;
-    //std::vector<tV0Kind> mV0Kind{ mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/"};
   };
 
-  //~ struct tCutsMc{
-    //~ tCutsMc(std::string thePath) : mPath{thePath} {}
-    //~ std::string mPath{""}; // v0/beforeMcCuts/ or v0/afterMcCuts/
-    //~ tMotherDirV0Kinds  mBeforeAfterRecInMc[2]{ mPath + "beforeRec/", mPath + "afterRec/"};
-    //tCutsMc mRejectedRec[3]{ mPath + "", mPath + "" }; // not sure if this a circular reference
-  //~ };
+  struct tMotherDirRejMc{
+    tMotherDirRejMc(std::string thePath) : mPath{thePath} {}
+    std::string mPath{""};
+    tMotherDirV0Kinds mBeforeAfterRecCuts[2]{ mPath + "beforeRecCuts/", mPath + "afterRecCuts/"};
+  };
 
   // for collision track v0
   struct tHistoFolderCTV {
@@ -200,9 +198,15 @@ struct GammaConversions {
 
     std::string mPath{""};
     tV0Kind mSpecialHistos{ mPath };
-    tMotherDirV0Kinds mSubDir[2]{ mPath + "beforeRecCuts/", mPath + "afterRecCuts/"};
-    //~ tCutsMc mRejectedMc[3]{ mPath + "", mPath + "" }; // eta physPrim sum
+    tMotherDirV0Kinds mBeforeAfterRecCuts[2]{ mPath + "beforeRecCuts/",
+                                              mPath + "afterRecCuts/"};
+
+    tMotherDirRejMc mRejectedByMc[2]{ mPath + "rejectedByMc/kNoPhysicalPrimary/",
+                                      mPath + "rejectedByMc/kOutsideMCEtaAcc/"};
+
   };
+  enum eMcRejectionReason { kNoPhysicalPrimary, kOutsideMCEtaAcc };
+
 
   struct tHistoRegistry {
     tHistoRegistry(std::string thePath) : mPath{thePath} {}
@@ -251,24 +255,33 @@ struct GammaConversions {
         // for track and collision histos we only plot reconstructed quantities at the moment
         if (iMcKind == kRec){
           // collision histograms
-          fMyRegistry.mCollision.mSubDir[iBARecCuts].mV0Kind[iMcKind].
+          fMyRegistry.mCollision.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
             addHistosToOfficalRegistry(fHistogramRegistry,
                                        fCollisionHistoDefinitions,
                                        &fMcSuffixes[iMcKind]);
 
           // track histograms
-          fMyRegistry.mTrack.mSubDir[iBARecCuts].mV0Kind[iMcKind].
+          fMyRegistry.mTrack.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
             addHistosToOfficalRegistry(fHistogramRegistry,
                                        fTrackHistoDefinitions,
                                        &fMcSuffixes[iMcKind]);
         }
 
         // v0 histograms
-        fMyRegistry.mV0.mSubDir[iBARecCuts].mV0Kind[iMcKind].
+        fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
           addHistosToOfficalRegistry(fHistogramRegistry,
                                     (iMcKind < 3) ?
                                       fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
                                     &fMcSuffixes[iMcKind]);
+
+        // v0 rejection histos
+        for (size_t iRejReason = 0; iRejReason < 2; ++iRejReason) {
+          fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
+          addHistosToOfficalRegistry(fHistogramRegistry,
+                                    (iMcKind < 3) ?
+                                      fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
+                                    &fMcSuffixes[iMcKind]);
+        }
       }
     }
   }
@@ -320,16 +333,52 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMA>
-  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
+  void fillAllV0HistogramsForRejectedByMc(int theRejReason,
+                                          int theBefAftRec,
+                                          TMCGAMMA const& theMcPhoton,
+                                          TV0 const& theV0,
+                                          float const& theV0CosinePA)
   {
+    fillV0Histograms(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
+      theV0,
+      theV0CosinePA);
+
+    fillTruePhotonHistogramsForRejectedByMc(theRejReason,
+                                            theBefAftRec,
+                                            theMcPhoton,
+                                            theV0,
+                                            theV0CosinePA);
+  }
+
+  template <typename TV0, typename TMCGAMMA>
+  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts)
+  {
+    auto fillRejectionHistos = [&](int theRejReason){
+      fillAllV0HistogramsForRejectedByMc(theRejReason,
+                                         kBeforeRecCuts,
+                                         theMcPhoton,
+                                         theV0,
+                                         theV0CosinePA);
+      if (theV0PassesRecCuts){
+        fillAllV0HistogramsForRejectedByMc(theRejReason,
+                                           kAfterRecCuts,
+                                           theMcPhoton,
+                                           theV0,
+                                           theV0CosinePA);
+      }
+    };
+
     fillTruePhotonSelection("kMcMotherIn");
     if (!theMcPhoton.isPhysicalPrimary()) {
       fillTruePhotonSelection("kNoPhysicalPrimary");
+      fillRejectionHistos(kNoPhysicalPrimary);
       return false;
     }
 
     if (std::abs(theMcPhoton.eta()) > fTruePhotonEtaMax) {
       fillTruePhotonSelection("kOutsideMCEtaAcc");
+      fillRejectionHistos(kOutsideMCEtaAcc);
       return false;
     }
     fillTruePhotonSelection("kGoodMcPhotonOut");
@@ -352,7 +401,10 @@ struct GammaConversions {
     }
     auto const lMcPhoton = theMcPhotonForThisV0AsTable.begin();
 
-    if (!v0IsGoodValidatedMcPhoton(lMcPhoton, theV0, theV0CosinePA)){
+    if (!v0IsGoodValidatedMcPhoton(lMcPhoton,
+                                   theV0,
+                                   theV0CosinePA,
+                                   theV0PassesRecCuts)){
       return;
     }
 
@@ -370,42 +422,65 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMA>
-  void fillV0ResolutionHistograms(int theBefAftRec,
+  void fillV0ResolutionHistograms(mapStringHistPtr& theContainer,
                                   TMCGAMMA const& theMcPhoton,
                                   TV0 const& theV0)
   {
-    auto& lResContainer = fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kRes].mContainer;
-
     TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
     TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
 
-    fillTH1(lResContainer, "hPtRes", theV0.pt() - theMcPhoton.pt());
-    fillTH1(lResContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
-    fillTH1(lResContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
-    fillTH1(lResContainer, "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
-    fillTH1(lResContainer, "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
+    fillTH1(theContainer, "hPtRes", theV0.pt() - theMcPhoton.pt());
+    fillTH1(theContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
+    fillTH1(theContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
+    fillTH1(theContainer, "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
+    fillTH1(theContainer, "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
   }
 
   template <typename TV0, typename TMCGAMMA> // use enumtypes?
   void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
   {
     fillV0HistogramsMcGamma(
-      fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kMCTrue].mContainer,
+      fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
       theMcPhoton);
 
     fillV0Histograms(
-      fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
       theV0CosinePA);
 
-    fillV0ResolutionHistograms(theBefAftRec, theMcPhoton, theV0);
+    fillV0ResolutionHistograms(
+      fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRes].mContainer,
+      theMcPhoton,
+      theV0);
+  }
+
+  template <typename TV0, typename TMCGAMMA> // use enumtypes?
+  void fillTruePhotonHistogramsForRejectedByMc(int theRejReason,
+                                               int theBefAftRec,
+                                               TMCGAMMA const& theMcPhoton,
+                                               TV0 const& theV0,
+                                               float const& theV0CosinePA)
+  {
+    fillV0HistogramsMcGamma(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
+      theMcPhoton);
+
+    fillV0Histograms(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      theV0,
+      theV0CosinePA);
+
+    fillV0ResolutionHistograms(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      theMcPhoton,
+      theV0);
   }
 
   void processRec(aod::Collisions::iterator const& theCollision,
                   aod::V0Datas const& theV0s,
                   aod::V0DaughterTracks const& theAllTracks)
   {
-    fillTH1(fMyRegistry.mCollision.mSubDir[kBeforeRecCuts].mV0Kind[kRec].mContainer,
+    fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
       "hCollisionZ",
       theCollision.posZ());
 
@@ -427,7 +502,7 @@ struct GammaConversions {
                  aod::V0DaughterTracks const& theAllTracks,
                  aod::McGammasTrue const& theV0sTrue)
   {
-    fillTH1(fMyRegistry.mCollision.mSubDir[kBeforeRecCuts].mV0Kind[kRec].mContainer,
+    fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
       "hCollisionZ",
       theCollision.posZ());
 
@@ -600,14 +675,23 @@ struct GammaConversions {
     fillIsPhotonSelected( !theBefAftRec ? "kV0In" : "kV0Out");
 
     fillTrackHistograms(
-      fMyRegistry.mTrack.mSubDir[theBefAftRec].mV0Kind[kRec].mContainer,
+      fMyRegistry.mTrack.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theTwoV0Daughters);
 
     fillV0Histograms(
-      fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kRec].mContainer,
+      fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
       theV0CosinePA);
   }
+
+  //~ template <typename TV0, typename TTRACKS>
+  //~ void fillReconstructedInfoHistograms(int theBefAftRec, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
+  //~ {
+    //~ fillV0Histograms(
+      //~ fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
+      //~ theV0,
+      //~ theV0CosinePA);
+  //~ }
 
   Bool_t ArmenterosQtCut(Double_t theAlpha, Double_t theQt, Double_t thePt)
   {

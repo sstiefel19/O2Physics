@@ -124,10 +124,13 @@ struct GammaConversions {
     {"kPhotonOut", 12}};
 
   std::map<std::string, size_t> fMcPhotonCutIndeces{
-    {"kMcPhotonIn", 0},
-    {"kMcPhysicalPrimary", 1},
-    {"kMcEta", 2},
-    {"kMcPhotonOut", 12}};
+    {"kV0in", 0},
+    {"kFakeV0", 1},
+    {"kMcMotherIn", 2},
+    {"kNoPhysicalPrimary", 3},
+    {"kNoGammaMother", 4},
+    {"kOutsideMCEtaAcc", 5},
+    {"kGoodMcPhotonOut", 6}};
 
   std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
   std::vector<std::string> fMcSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
@@ -321,15 +324,17 @@ struct GammaConversions {
   template <typename TV0, typename TMCGAMMA>
   bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
   {
+    fillTruePhotonSelection("kMcMotherIn");
     if (!theMcPhoton.isPhysicalPrimary()) {
-      fillTruePhotonSelection("kMcPhysicalPrimary");
+      fillTruePhotonSelection("kNoPhysicalPrimary");
       return false;
     }
 
     if (std::abs(theMcPhoton.eta()) > fTruePhotonEtaMax) {
-      fillTruePhotonSelection("kMcEta");
+      fillTruePhotonSelection("kOutsideMCEtaAcc");
       return false;
     }
+    fillTruePhotonSelection("kGoodMcPhotonOut");
     return true;
   }
 
@@ -339,10 +344,11 @@ struct GammaConversions {
                        float const& theV0CosinePA,
                        TTRACKS const& theTwoV0Daughters)
   {
-    fillTruePhotonSelection("kMcPhotonIn");
+    fillTruePhotonSelection("kV0in");
 
     // is a table that might be empty
     if (theMcPhotonForThisV0AsTable.begin() == theMcPhotonForThisV0AsTable.end()) {
+      fillTruePhotonSelection("kFakeV0");
       return false;
     }
     auto const lMcPhoton = theMcPhotonForThisV0AsTable.begin();
@@ -350,8 +356,6 @@ struct GammaConversions {
     if (!v0IsGoodValidatedMcPhoton(lMcPhoton, theV0, theV0CosinePA)){
       return false;
     }
-
-    fillTruePhotonSelection("kMcPhotonOut");
 
     fillAllHistograms(kAfterMcCuts,
                       kBeforeRecCuts,
@@ -385,6 +389,24 @@ struct GammaConversions {
                                theV0CosinePA);
   }
 
+  template <typename TV0, typename TMCGAMMA>
+  void fillV0ResolutionHistograms(int theBefAftMc, // use enumtypes?
+                                  int theBefAftRec,
+                                  TMCGAMMA const& theMcPhoton,
+                                  TV0 const& theV0)
+  {
+    auto& lResContainer = fMyRegistry.mV0.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kRes].mContainer;
+
+    TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
+    TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
+
+    fillTH1(lResContainer, "hPtRes", theV0.pt() - theMcPhoton.pt());
+    fillTH1(lResContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
+    fillTH1(lResContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
+    fillTH1(lResContainer, "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
+    fillTH1(lResContainer, "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
+  }
+
   template <typename TV0, typename TMCGAMMA> // use enumtypes?
   void fillTruePhotonHistograms( int theBefAftMc, int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
   {
@@ -397,19 +419,7 @@ struct GammaConversions {
       theV0,
       theV0CosinePA);
 
-
-    // v0 resolution histos
-    //~ {
-      //~ TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-      //~ TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
-
-      //~ std::string lPath(fPathResolutions + theBAC);
-      //~ fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - theMcPhoton.pt());
-      //~ fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - theMcPhoton.eta());
-      //~ fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - theMcPhoton.phi());
-      //~ fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
-      //~ fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
-    //~ }
+    fillV0ResolutionHistograms(theBefAftMc, theBefAftRec, theMcPhoton, theV0);
   }
 
   void processRec(aod::Collisions::iterator const& theCollision,
@@ -456,7 +466,6 @@ struct GammaConversions {
 
       // is a table that might be empty
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
-
       bool lValidatedMcPhoton = processMcPhoton(lMcPhotonForThisV0AsTable, lV0, lV0CosinePA, lTwoV0Daughters);
 
       bool lV0PassesCuts = processPhoton(lV0, lV0CosinePA, lTwoV0Daughters);
@@ -620,7 +629,7 @@ struct GammaConversions {
     fillV0Histograms(
       fMyRegistry.mV0.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
-      theV0CosinePA); // todo correct [0]!
+      theV0CosinePA);
   }
 
   Bool_t ArmenterosQtCut(Double_t theAlpha, Double_t theQt, Double_t thePt)

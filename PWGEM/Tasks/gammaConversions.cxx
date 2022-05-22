@@ -133,7 +133,7 @@ struct GammaConversions {
     {"kGoodMcPhotonOut", 12}};
 
   std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
-  std::vector<std::string> fMcSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
+  //~ std::vector<std::string> fMcSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
 
   //~ enum eBeforeAfterMcCuts { kBeforeMcCuts, kAfterMcCuts };
   enum eBeforeAfterRecCuts { kBeforeRecCuts, kAfterRecCuts };
@@ -144,35 +144,25 @@ struct GammaConversions {
     tV0Kind(std::string thePath) : mPath{thePath} {}
 
     // todo: remove
-    template <typename T>
-    void appendSuffixToTitleI(HistPtr& theHistPtr, std::string* theSuffix)
-    {
-      auto lHisto = std::get<std::shared_ptr<T>>(theHistPtr);
-      if (lHisto) {
-        std::string lTitle(lHisto->GetTitle());
-        lHisto->SetTitle(lTitle.append(*theSuffix).data());
-      } else {
-        LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained in order to append suffix to title.");
-      }
-    }
+    //~ template <typename T>
+    //~ void appendSuffixToTitleI(HistPtr& theHistPtr, std::string* theSuffix)
+    //~ {
+      //~ auto lHisto = std::get<std::shared_ptr<T>>(theHistPtr);
+      //~ if (lHisto) {
+        //~ std::string lTitle(lHisto->GetTitle());
+        //~ lHisto->SetTitle(lTitle.append(*theSuffix).data());
+      //~ } else {
+        //~ LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained in order to append suffix to title.");
+      //~ }
+    //~ }
 
     void addHistosToOfficalRegistry(HistogramRegistry& theOfficialRegistry,
-                                    std::vector<MyHistogramSpec> const& theHistoDefinitions,
-                                    std::string* theSuffix = nullptr) {
+                                    std::vector<MyHistogramSpec> const& theHistoDefinitions) {
       for (auto& tHisto : theHistoDefinitions) {
-        std::string lFullName(mPath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
+        std::string lFullName(mPath + tHisto.m.name);
         LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
         HistPtr lHistPtr = theOfficialRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
         mContainer.insert(std::pair{tHisto.m.name, lHistPtr});
-
-        // todo ugly: remove
-        if (theSuffix) {
-          if (tHisto.m.config.type == kTH1F) {
-            appendSuffixToTitleI<TH1>(lHistPtr, theSuffix);
-          } else if (tHisto.m.config.type == kTH2F) {
-            appendSuffixToTitleI<TH2>(lHistPtr, theSuffix);
-          }
-        }
       }
     }
 
@@ -257,30 +247,26 @@ struct GammaConversions {
           // collision histograms
           fMyRegistry.mCollision.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
             addHistosToOfficalRegistry(fHistogramRegistry,
-                                       fCollisionHistoDefinitions,
-                                       &fMcSuffixes[iMcKind]);
+                                       fCollisionHistoDefinitions);
 
           // track histograms
           fMyRegistry.mTrack.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
             addHistosToOfficalRegistry(fHistogramRegistry,
-                                       fTrackHistoDefinitions,
-                                       &fMcSuffixes[iMcKind]);
+                                       fTrackHistoDefinitions);
         }
 
         // v0 histograms
         fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
           addHistosToOfficalRegistry(fHistogramRegistry,
                                     (iMcKind < 3) ?
-                                      fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
-                                    &fMcSuffixes[iMcKind]);
+                                      fV0HistoDefinitions : fV0ResolutionHistoDefinitions);
 
         // v0 rejection histos
         for (size_t iRejReason = 0; iRejReason < 2; ++iRejReason) {
           fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].
           addHistosToOfficalRegistry(fHistogramRegistry,
                                     (iMcKind < 3) ?
-                                      fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
-                                    &fMcSuffixes[iMcKind]);
+                                      fV0HistoDefinitions : fV0ResolutionHistoDefinitions);
         }
       }
     }
@@ -471,7 +457,7 @@ struct GammaConversions {
       theV0CosinePA);
 
     fillV0ResolutionHistograms(
-      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRes].mContainer,
       theMcPhoton,
       theV0);
   }

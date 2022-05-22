@@ -109,7 +109,7 @@ struct GammaConversions {
     {"hTruePhotonSelection", "hTruePhotonSelection;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
 
   std::map<std::string, size_t> fPhotonCutIndeces{
-    {"kPhotonIn", 0},
+    {"kV0In", 0},
     {"kTrackEta", 1},
     {"kTrackPt", 2},
     {"kElectronPID", 3},
@@ -121,7 +121,7 @@ struct GammaConversions {
     {"kArmenteros", 9},
     {"kPsiPair", 10},
     {"kCosinePA", 11},
-    {"kPhotonOut", 12}};
+    {"kV0Out", 12}};
 
   std::map<std::string, size_t> fMcPhotonCutIndeces{
     {"kV0in", 0},
@@ -130,7 +130,7 @@ struct GammaConversions {
     {"kNoPhysicalPrimary", 3},
     {"kNoGammaMother", 4},
     {"kOutsideMCEtaAcc", 5},
-    {"kGoodMcPhotonOut", 6}};
+    {"kGoodMcPhotonOut", 12}};
 
   std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
   std::vector<std::string> fMcSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
@@ -187,12 +187,12 @@ struct GammaConversions {
     //std::vector<tV0Kind> mV0Kind{ mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/"};
   };
 
-  struct tCutsMc{
-    tCutsMc(std::string thePath) : mPath{thePath} {}
-    std::string mPath{""}; // v0/beforeMcCuts/ or v0/afterMcCuts/
-    tMotherDirV0Kinds  mBeforeAfterRecInMc[2]{ mPath + "beforeRec/", mPath + "afterRec/"};
-    //~ tCutsMc mRejectedRec[3]{ mPath + "", mPath + "" }; // not sure if this a circular reference
-  };
+  //~ struct tCutsMc{
+    //~ tCutsMc(std::string thePath) : mPath{thePath} {}
+    //~ std::string mPath{""}; // v0/beforeMcCuts/ or v0/afterMcCuts/
+    //~ tMotherDirV0Kinds  mBeforeAfterRecInMc[2]{ mPath + "beforeRec/", mPath + "afterRec/"};
+    //tCutsMc mRejectedRec[3]{ mPath + "", mPath + "" }; // not sure if this a circular reference
+  //~ };
 
   // for collision track v0
   struct tHistoFolderCTV {
@@ -200,7 +200,7 @@ struct GammaConversions {
 
     std::string mPath{""};
     tV0Kind mSpecialHistos{ mPath };
-    tCutsMc mBeforeAfterMc[2]{ mPath + "beforeMcCuts/", mPath + "afterMcCuts/"};
+    tMotherDirV0Kinds mSubDir[2]{ mPath + "beforeRecCuts/", mPath + "afterRecCuts/"};
     //~ tCutsMc mRejectedMc[3]{ mPath + "", mPath + "" }; // eta physPrim sum
   };
 
@@ -245,32 +245,30 @@ struct GammaConversions {
       addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hTruePhotonSelection", fMcPhotonCutIndeces);
     }
 
-    for (size_t iBAMcCuts = 0; iBAMcCuts < (doprocessMc ? 2 : 1); ++iBAMcCuts ){
-      for (size_t iBARecCuts = 0; iBARecCuts < 2; ++iBARecCuts) {
-        for (size_t iMcKind = 0; iMcKind < (doprocessMc ? 4 : 1); ++iMcKind) {
+    for (size_t iBARecCuts = 0; iBARecCuts < 2; ++iBARecCuts) {
+      for (size_t iMcKind = 0; iMcKind < (doprocessMc ? 4 : 1); ++iMcKind) {
 
-          // for track and collision histos we only plot reconstructed quantities at the moment
-          if (iMcKind == kRec){
-            // collision histograms
-            fMyRegistry.mCollision.mBeforeAfterMc[iBAMcCuts].mBeforeAfterRecInMc[iBARecCuts].mV0Kind[iMcKind].
-              addHistosToOfficalRegistry(fHistogramRegistry,
-                                         fCollisionHistoDefinitions,
-                                         &fMcSuffixes[iMcKind]);
-
-            // track histograms
-            fMyRegistry.mTrack.mBeforeAfterMc[iBAMcCuts].mBeforeAfterRecInMc[iBARecCuts].mV0Kind[iMcKind].
-              addHistosToOfficalRegistry(fHistogramRegistry,
-                                         fTrackHistoDefinitions,
-                                         &fMcSuffixes[iMcKind]);
-          }
-
-          // v0 histograms
-          fMyRegistry.mV0.mBeforeAfterMc[iBAMcCuts].mBeforeAfterRecInMc[iBARecCuts].mV0Kind[iMcKind].
+        // for track and collision histos we only plot reconstructed quantities at the moment
+        if (iMcKind == kRec){
+          // collision histograms
+          fMyRegistry.mCollision.mSubDir[iBARecCuts].mV0Kind[iMcKind].
             addHistosToOfficalRegistry(fHistogramRegistry,
-                                      (iMcKind < 3) ?
-                                        fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
-                                      &fMcSuffixes[iMcKind]);
+                                       fCollisionHistoDefinitions,
+                                       &fMcSuffixes[iMcKind]);
+
+          // track histograms
+          fMyRegistry.mTrack.mSubDir[iBARecCuts].mV0Kind[iMcKind].
+            addHistosToOfficalRegistry(fHistogramRegistry,
+                                       fTrackHistoDefinitions,
+                                       &fMcSuffixes[iMcKind]);
         }
+
+        // v0 histograms
+        fMyRegistry.mV0.mSubDir[iBARecCuts].mV0Kind[iMcKind].
+          addHistosToOfficalRegistry(fHistogramRegistry,
+                                    (iMcKind < 3) ?
+                                      fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
+                                    &fMcSuffixes[iMcKind]);
       }
     }
   }
@@ -298,21 +296,21 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TTRACKS>
-  bool processPhoton(TV0 const& theV0, const float& theV0CosinePA, TTRACKS const& theTwoV0Daughters)
+  bool processV0(TV0 const& theV0, const float& theV0CosinePA, TTRACKS const& theTwoV0Daughters)
   {
-    for (auto& lTrack : theTwoV0Daughters) {
-      if (!trackPassesCuts(lTrack)) {
-        return kFALSE;
-      }
-    }
+    fillReconstructedInfoHistograms(
+        kBeforeRecCuts,
+        theV0,
+        theTwoV0Daughters,
+        theV0CosinePA);
 
-    // apply photon cuts
-    if (!photonPassesCuts(theV0, theV0CosinePA)) {
-      return kFALSE;
+    // apply track cuts and photon cuts
+    if (!(v0PassesTrackCuts(theTwoV0Daughters) &&
+          v0PassesPhotonCuts(theV0, theV0CosinePA))){
+      return false;
     }
 
     fillReconstructedInfoHistograms(
-      kAfterMcCuts,
       kAfterRecCuts,
       theV0,
       theTwoV0Daughters,
@@ -339,9 +337,10 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMATABLE, typename TTRACKS>
-  bool processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable,
+  void processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable,
                        TV0 const& theV0,
                        float const& theV0CosinePA,
+                       bool theV0PassesRecCuts,
                        TTRACKS const& theTwoV0Daughters)
   {
     fillTruePhotonSelection("kV0in");
@@ -349,53 +348,33 @@ struct GammaConversions {
     // is a table that might be empty
     if (theMcPhotonForThisV0AsTable.begin() == theMcPhotonForThisV0AsTable.end()) {
       fillTruePhotonSelection("kFakeV0");
-      return false;
+      return;
     }
     auto const lMcPhoton = theMcPhotonForThisV0AsTable.begin();
 
     if (!v0IsGoodValidatedMcPhoton(lMcPhoton, theV0, theV0CosinePA)){
-      return false;
+      return;
     }
 
-    fillAllHistograms(kAfterMcCuts,
-                      kBeforeRecCuts,
-                      lMcPhoton,
-                      theV0,
-                      theV0CosinePA,
-                      theTwoV0Daughters);
-    return true;
-  }
+    fillTruePhotonHistograms(kBeforeRecCuts,
+                             lMcPhoton,
+                             theV0,
+                             theV0CosinePA);
 
-  template <typename TV0, typename TMCGAMMA, typename TTRACKS> // use enumtypes?
-  void fillAllHistograms(int theBefAftMc,
-                         int theBefAftRec,
-                         TMCGAMMA const& theMcPhoton,
-                         TV0 const& theV0,
-                         float const& theV0CosinePA,
-                         TTRACKS const& theTwoV0Daughters)
-  {
-
-    fillReconstructedInfoHistograms(
-      theBefAftMc,
-      theBefAftRec,
-      theV0,
-      theTwoV0Daughters,
-      theV0CosinePA);
-
-      fillTruePhotonHistograms(theBefAftMc,
-                               theBefAftRec,
-                               theMcPhoton,
+    if (theV0PassesRecCuts){
+      fillTruePhotonHistograms(kAfterRecCuts,
+                               lMcPhoton,
                                theV0,
                                theV0CosinePA);
+    }
   }
 
   template <typename TV0, typename TMCGAMMA>
-  void fillV0ResolutionHistograms(int theBefAftMc, // use enumtypes?
-                                  int theBefAftRec,
+  void fillV0ResolutionHistograms(int theBefAftRec,
                                   TMCGAMMA const& theMcPhoton,
                                   TV0 const& theV0)
   {
-    auto& lResContainer = fMyRegistry.mV0.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kRes].mContainer;
+    auto& lResContainer = fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kRes].mContainer;
 
     TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
     TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
@@ -408,25 +387,25 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMA> // use enumtypes?
-  void fillTruePhotonHistograms( int theBefAftMc, int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
+  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
   {
     fillV0HistogramsMcGamma(
-      fMyRegistry.mV0.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kMCTrue].mContainer,
+      fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kMCTrue].mContainer,
       theMcPhoton);
 
     fillV0Histograms(
-      fMyRegistry.mV0.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
       theV0CosinePA);
 
-    fillV0ResolutionHistograms(theBefAftMc, theBefAftRec, theMcPhoton, theV0);
+    fillV0ResolutionHistograms(theBefAftRec, theMcPhoton, theV0);
   }
 
   void processRec(aod::Collisions::iterator const& theCollision,
                   aod::V0Datas const& theV0s,
                   aod::V0DaughterTracks const& theAllTracks)
   {
-    fillTH1(fMyRegistry.mCollision.mBeforeAfterMc[kBeforeMcCuts].mBeforeAfterRecInMc[kBeforeRecCuts].mV0Kind[kRec].mContainer,
+    fillTH1(fMyRegistry.mCollision.mSubDir[kBeforeRecCuts].mV0Kind[kRec].mContainer,
       "hCollisionZ",
       theCollision.posZ());
 
@@ -436,7 +415,7 @@ struct GammaConversions {
       auto lTwoV0Daughters = theAllTracks.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
 
-      if (!processPhoton(lV0, lV0CosinePA, lTwoV0Daughters)) {
+      if (!processV0(lV0, lV0CosinePA, lTwoV0Daughters)) {
         continue;
       }
     }
@@ -448,7 +427,7 @@ struct GammaConversions {
                  aod::V0DaughterTracks const& theAllTracks,
                  aod::McGammasTrue const& theV0sTrue)
   {
-    fillTH1(fMyRegistry.mCollision.mBeforeAfterMc[kBeforeMcCuts].mBeforeAfterRecInMc[kBeforeRecCuts].mV0Kind[kRec].mContainer,
+    fillTH1(fMyRegistry.mCollision.mSubDir[kBeforeRecCuts].mV0Kind[kRec].mContainer,
       "hCollisionZ",
       theCollision.posZ());
 
@@ -457,27 +436,16 @@ struct GammaConversions {
       auto lTwoV0Daughters = theAllTracks.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
 
-      fillReconstructedInfoHistograms(
-        kBeforeMcCuts,
-        kBeforeRecCuts,
-        lV0,
-        lTwoV0Daughters,
-        lV0CosinePA);
+       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
+      bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
 
-      // is a table that might be empty
+      // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
-      bool lValidatedMcPhoton = processMcPhoton(lMcPhotonForThisV0AsTable, lV0, lV0CosinePA, lTwoV0Daughters);
-
-      bool lV0PassesCuts = processPhoton(lV0, lV0CosinePA, lTwoV0Daughters);
-
-      if (lValidatedMcPhoton && lV0PassesCuts) {
-        fillAllHistograms(kAfterMcCuts,
-                          kAfterRecCuts,
-                          lMcPhotonForThisV0AsTable.begin(), /*safe since lValidatedMcPhoton*/
-                          lV0,
-                          lV0CosinePA,
-                          lTwoV0Daughters);
-      }
+      processMcPhoton(lMcPhotonForThisV0AsTable,
+                      lV0,
+                      lV0CosinePA,
+                      lV0PassesRecCuts,
+                      lTwoV0Daughters);
     }
   }
   PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
@@ -590,11 +558,20 @@ struct GammaConversions {
     return kTRUE;
   }
 
-  template <typename T>
-  bool photonPassesCuts(const T& theV0, float theV0CosinePA)
+  template <typename TTRACKS>
+  bool v0PassesTrackCuts(TTRACKS const& theTwoV0Daughters)
   {
-    fillIsPhotonSelected("kPhotonIn");
+    for (auto& lTrack : theTwoV0Daughters) {
+      if (!trackPassesCuts(lTrack)) {
+        return kFALSE;
+      }
+    }
+    return true;
+  }
 
+  template <typename TV0>
+  bool v0PassesPhotonCuts(const TV0& theV0, float theV0CosinePA)
+  {
     if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
       fillIsPhotonSelected("kV0Radius");
       return kFALSE;
@@ -614,20 +591,20 @@ struct GammaConversions {
       fillIsPhotonSelected("kCosinePA");
       return kFALSE;
     }
-    fillIsPhotonSelected("kPhotonOut");
-
     return kTRUE;
   }
 
   template <typename TV0, typename TTRACKS>
-  void fillReconstructedInfoHistograms(int theBefAftMc, int theBefAftRec, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
+  void fillReconstructedInfoHistograms(int theBefAftRec, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
   {
+    fillIsPhotonSelected( !theBefAftRec ? "kV0In" : "kV0Out");
+
     fillTrackHistograms(
-      fMyRegistry.mTrack.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kRec].mContainer,
+      fMyRegistry.mTrack.mSubDir[theBefAftRec].mV0Kind[kRec].mContainer,
       theTwoV0Daughters);
 
     fillV0Histograms(
-      fMyRegistry.mV0.mBeforeAfterMc[theBefAftMc].mBeforeAfterRecInMc[theBefAftRec].mV0Kind[kRec].mContainer,
+      fMyRegistry.mV0.mSubDir[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
       theV0CosinePA);
   }

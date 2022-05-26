@@ -33,20 +33,32 @@ using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksE
 
 struct skimmerGammaConversions {
 
-  HistogramRegistry registry{
-    "registry",
+  HistogramRegistry fRegistry{
+    "fRegistry",
     {
-      {"hCollisionZ_Rec", "hCollisionZ_Rec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
-      {"hMotherSameNess", "hMotherSameNess", {HistType::kTH1F, {{13, 0.f, 14.f}}}},
+
+      //~ {"hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}}},
+      {"hPeculiarOccurences", "hPeculiarOccurences", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
     },
   };
 
+  std::shared_ptr<TH1> fMotherSizesHisto{};
+      //~ std::shared_ptr<TH1> lHisto = getTH<TH1>(theMap, theName);
+
+
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
+
+  void init(InitContext const&)
+  {
+    //~ HistPtr lHistPtr = fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}});
+    fMotherSizesHisto = std::get<std::shared_ptr<TH1>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}}));
+    //~ fMotherSizesHisto = std::get<std::shared_ptr<TH1F*>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}}));
+  }
 
   // ============================ FUNCTION DEFINITIONS ====================================================
   void processRec(aod::Collisions::iterator const& theCollision,
@@ -72,7 +84,7 @@ struct skimmerGammaConversions {
         theTrack.tpcSignal());
     };
 
-    registry.fill(HIST("hCollisionZ_Rec"), theCollision.posZ());
+    fRegistry.fill(HIST("hCollisionZ"), theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
 
@@ -111,17 +123,17 @@ struct skimmerGammaConversions {
         theTrack.tpcSignal());
     };
 
-    registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
+    fRegistry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
     if (theCollisions.size() == 0) {
       return;
     }
 
-    registry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
-    registry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
+    fRegistry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
+    fRegistry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
 
     for (auto& lCollision : theCollisions) {
-      registry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
-
+      fRegistry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
+LOGF(info, "collision");
       // todo: replace by sliceByCached
       auto lGroupedV0s = theV0s.sliceBy(aod::v0data::collisionId, lCollision.globalIndex());
       for (auto& lV0 : lGroupedV0s) {
@@ -149,102 +161,187 @@ struct skimmerGammaConversions {
     bool result = false;
     // todo: verify it is enough to check only mother0 being equal
 
-    /* example from https://aliceo2group.github.io/analysis-framework/docs/tutorials/indexTables.html?highlight=_as:
-     * track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0
-     */
 
-    auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles>();
+    // urgent todo: understand why is it safly working like this? does it mean all the V0s have both tracks with MC information? no fake tracks? Reason for bad
+    /*auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles>();
     auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles>();
+    example from https://aliceo2group.github.io/analysis-framework/docs/tutorials/indexTables.html?highlight=_as:
+    track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0*/
 
-    // get all mc mothers from positive and negative tracks
-    //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-    std::vector<int> lMothers;
-    // SFS todo: remove all those mothers_as<aod::McParticles_001>, are the loops even necesarry?
-    for (auto& mP : lMcPos.template mothers_as<aod::McParticles>()) {
-      LOGF(info, "   mother index mP: %d", mP.globalIndex());
-      lMothers.push_back(mP.globalIndex());
+    //~ if (!(theTrackPos.has_mcParticle() && theTrackNeg.has_mcParticle())){
+      //~ LOGF(info, "SFS one V0 daughter track is a track without mc particle. Can't be a confirmable v0.");
+      //~ fRegistry.fill(HIST("hPeculiarOccurences"), 0.5);
+      //~ return false;
+    //~ }
+    //~ auto lMcPos = theTrackPos.mcParticle();
+    //~ auto lMcNeg = theTrackNeg.mcParticle();
+
+    //~ for (auto& mP : lMcPos.template mothers_as<aod::McParticles>()) {
+      //~ LOGF(info, "   mother index mP: %d", mP.globalIndex());
+      //~ lMothersGlobalIndices.push_back(mP.globalIndex());
+    //~ }
+    //~ for (auto& mN : lMcNeg.template mothers_as<aod::McParticles>()) {
+      //~ LOGF(info, "   mother index mN: %d", mN.globalIndex());
+      //~ lMothersGlobalIndices.push_back(mN.globalIndex());
+    //~ }
+
+    //~ switch(lMothersGlobalIndices.size()){
+      //~ case 0 : return false; // none of the tracks come from a mc photon
+      //~ case 1 : {
+                  //~ //one of the tracks has a mc mother, the other doesn't. Strange but not impossible I guess
+                  //~ LOGF(info, "SFS only one track has a mother.");
+
+               //~ }
+
+    //~ }
+
+    /*
+    if (!lMothersGlobalIndices.size()){
+      // none of the tracks come from a mc photon
+      return false;
     }
-
-    if (lMothers.size() > 0) {
-      for (auto& mN : lMcNeg.template mothers_as<aod::McParticles>()) {
-        LOGF(info, "   mother index mN: %d", mN.globalIndex());
-        lMothers.push_back(mN.globalIndex());
-      }
-    }
-
+*/
+/*
     // SFS verify theyre all the same category and remove
     int lMotherSameNess = 0;
     {
-      if (lMothers.size() == 2) {
-        if (lMothers[0] == lMothers[1]) {
+      if (lMothersGlobalIndices.size() == 2) {
+        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[1]) {
           LOGF(info, "size2: 01");
           lMotherSameNess = 1;
         }
       }
 
-      if (lMothers.size() == 3) {
-        if (lMothers[0] == lMothers[1]) {
+      if (lMothersGlobalIndices.size() == 3) {
+        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[1]) {
           LOGF(info, "size3: 01");
           lMotherSameNess = 2;
         }
-        if (lMothers[0] == lMothers[2]) {
+        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[2]) {
           LOGF(info, "size2: 02");
           lMotherSameNess = 3;
         }
-        if (lMothers[1] == lMothers[2]) {
+        if (lMothersGlobalIndices[1] == lMothersGlobalIndices[2]) {
           LOGF(info, "size2: 12");
           lMotherSameNess = 4;
         }
       }
 
-      if (lMothers.size() == 4) {
-        if (lMothers[0] == lMothers[2]) {
+      if (lMothersGlobalIndices.size() == 4) {
+        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[2]) {
           LOGF(info, "size4 02");
           lMotherSameNess = 4;
         }
-        if (lMothers[1] == lMothers[3]) {
+        if (lMothersGlobalIndices[1] == lMothersGlobalIndices[3]) {
           LOGF(info, "size4 13");
           lMotherSameNess = 5;
         }
-        if (lMothers[0] == lMothers[3]) {
+        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[3]) {
           LOGF(info, "size4 03");
           lMotherSameNess = 6;
         }
-        if (lMothers[1] == lMothers[2]) {
+        if (lMothersGlobalIndices[1] == lMothersGlobalIndices[2]) {
           LOGF(info, "size4 12");
           lMotherSameNess = 7;
         }
-        if (lMothers[0] == lMothers[1]) {
+        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[1]) {
           LOGF(info, "size4 01");
           lMotherSameNess = 8;
         }
-        if (lMothers[2] == lMothers[3]) {
+        if (lMothersGlobalIndices[2] == lMothersGlobalIndices[3]) {
           LOGF(info, "size4 23");
           lMotherSameNess = 9;
         }
       }
     }
 
-    registry.fill(HIST("hMotherSameNess"), 0.5 + (float)lMotherSameNess);
+*/
+
+
+    //~ auto checkOneTrack = [&](auto const& theRecTrack){
+      //~ std::vector<int> lMothersIndeces{};
+      //~ if (!theRecTrack.has_mcParticle()){
+        //~ LOGF(info,
+             //~ "SFS V0 daughter track %d is a track without mc particle. Can't be a confirmable v0.",
+             //~ theRecTrack.globalIndex());
+        //~ fMotherSizesHisto->Fill(-0.5);
+        //~ return lMothersIndeces;
+      //~ }
+      //~ auto const& lMcParticle = theRecTrack.mcParticle();
+      //~ for (auto& lMother : lMcParticle.template mothers_as<aod::McParticles>()) {
+        //~ LOGF(info, "   mother index lMother: %d", lMother.globalIndex());
+        //~ lMothersIndeces.push_back(lMother.globalIndex());
+      //~ }
+      //~ fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
+      //~ return std::move(lMothersIndeces);
+    //~ };
+
+    auto assessTrack = [&](auto const& theRecTrack){
+      if (!theRecTrack.has_mcParticle()){
+        LOGF(info,
+             "SFS V0 daughter track %d is a track without mc particle. Can't be a confirmable v0.",
+             theRecTrack.globalIndex());
+        fMotherSizesHisto->Fill(-0.5);
+        return false;
+      }
+      return true;
+    };
+
+    auto getMotherIndeces = [&](auto const& theMcParticle){
+      std::vector<int> lMothersIndeces{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(info, "   mother index lMother: %d", lMother.globalIndex());
+        lMothersIndeces.push_back(lMother.globalIndex());
+      }
+      fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
+      return std::move(lMothersIndeces);
+    };
+
+    if (!(assessTrack(theTrackPos) && assessTrack(theTrackNeg)){
+      return false;
+    }
+    auto lMcPos = theTrackPos.mcParticle();
+    auto lMcNeg = theTrackNeg.mcParticle();
+
+    std::vector<int> lMothersIdxPos = getMotherIndeces(lMcPos);
+    std::vector<int> lMothersIdxNeg = getMotherIndeces(lMcNeg);
+
+    if (!(lMothersIdxPos.size() || lMothersIdxNeg.size())){
+      // none of tracks has a mother
+      return false;
+    }
+
+    //~ auto const& lDaughterWithAMother = lMothersIdxPos.size() ? lMcPos : lMcNeg;
+    if ((lMothersIdxPos.size() + lMothersIdxNeg.size()) == 1){
+      // exactly one has a mother
+      fRegistry.fill(HIST("hPeculiarOccurences"), -0.5);
+
+      return false;
+    }
+
+
+    if (lMothersIdxPos)
 
     // if both tracks have exactly one and the same mother
     if (lMotherSameNess == 1) {
       // SFS todo: actually no loop required here, for this
       for (auto& lMcMother : lMcNeg.template mothers_as<aod::McParticles>()) {
+
+        // case we have a confirmed photon conversion and have the mother mc particle
         if ((result = lMcMother.pdgCode() == 22)) {
 
+          // get mc daughter in order to compute true conversion point
           auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
-          float lDaughter0Vx = -1.;
-          float lDaughter0Vy = -1.;
-          float lDaughter0Vz = -1.;
-          float lV0Radius = -1.;
-          if (lDaughters.size()) {
-            auto lDaughter0 = lDaughters.begin();
-            lDaughter0Vx = lDaughter0.vx();
-            lDaughter0Vy = lDaughter0.vy();
-            lDaughter0Vz = lDaughter0.vz();
-            lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+          if (lDaughters.begin() == lDaughters.end()) {
+            // mc converted mother has no mc daughters, should never happen
+            fRegistry.fill(HIST("hPeculiarOccurences"), -1.5);
+            return false;
           }
+          auto lDaughter0 = lDaughters.begin();
+          float lDaughter0Vx = lDaughter0.vx();
+          float lDaughter0Vy = lDaughter0.vy();
+          float lDaughter0Vz = lDaughter0.vz();
+          float lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
 
           fFuncTableMcGammasFromConfirmedV0s(
             lMcMother.mcCollisionId(),
@@ -260,7 +357,7 @@ struct skimmerGammaConversions {
             lV0Radius);
         }
       }
-    }
+    }*/
     return result;
   }
 };

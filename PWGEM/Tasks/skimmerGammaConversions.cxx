@@ -152,7 +152,6 @@ LOGF(info, "collision");
   }
   PROCESS_SWITCH(skimmerGammaConversions, processMc, "process reconstructed and mc info ", false);
 
-  // SFS todo: make pretty and short
   template <typename TV0, typename TTRACK>
   bool isConversionPhoton(TV0 const& theV0,
                           TTRACK const& theTrackPos,
@@ -211,45 +210,37 @@ LOGF(info, "collision");
       return false;
     }
 
-    // both tracks have the first mother
-    // SFS todo: actually no loop required here, for this
-    bool lResult = false;
+    // both tracks have the same first mother
+    // SFS todo: actually no loop required here, for this. Access directly mc particle with lMothersIndecesFlags
     for (auto& lMcMother : lMcNeg.template mothers_as<aod::McParticles>()) {
 
-      // case we have a confirmed photon conversion and have the mother mc particle
-      // todo: store if it was not a photon but another mother particle
-      if ((lResult = lMcMother.pdgCode() == 22)) {
-
-        // get mc daughter in order to compute true conversion point
-        auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
-        if (lDaughters.begin() == lDaughters.end()) {
-          // mc converted mother has no mc daughters, should never happen
-          fMotherSizesHisto->Fill(-3.5);
-          return false;
-        }
-        auto lDaughter0 = lDaughters.begin();
-        float lDaughter0Vx = lDaughter0.vx();
-        float lDaughter0Vy = lDaughter0.vy();
-        float lDaughter0Vz = lDaughter0.vz();
-        float lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
-
-        fFuncTableMcGammasFromConfirmedV0s(
-          lMcMother.mcCollisionId(),
-          lMcMother.globalIndex(),
-          theV0.v0Id(),
-          lMcMother.statusCode(),
-          lMcMother.flags(),
-          lMcMother.px(), lMcMother.py(), lMcMother.pz(),
-          lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(),
-          lDaughters.size(),
-          lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
-          lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
-          lV0Radius);
+      // get mc daughter in order to compute true conversion point
+      auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
+      if (lDaughters.begin() == lDaughters.end()) {
+        // mc converted mother has no mc daughters, should never happen
+        fMotherSizesHisto->Fill(-3.5);
+        return false;
       }
+      auto lDaughter0 = lDaughters.begin();
+      float lDaughter0Vx = lDaughter0.vx();
+      float lDaughter0Vy = lDaughter0.vy();
+      float lDaughter0Vz = lDaughter0.vz();
+      float lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+
+      fFuncTableMcGammasFromConfirmedV0s(
+        lMcMother.mcCollisionId(),
+        lMcMother.globalIndex(),
+        theV0.v0Id(),
+        lMcMother.pdgCode(), lMcMother.statusCode(), lMcMother.flags(),
+        lMcMother.px(), lMcMother.py(), lMcMother.pz(),
+        lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(),
+        lDaughters.size(),
+        lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
+        lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
+        lV0Radius);
       break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
     }
-
-    return lResult;
+    return true;
   }
 };
 

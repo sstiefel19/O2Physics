@@ -371,6 +371,11 @@ struct GammaConversions {
       return false;
     }
 
+    if (theMcPhoton.pdgCode() != 22) {
+      fillTruePhotonSelection("kNoGammaMother");
+      return false;
+    }
+
     if (std::abs(theMcPhoton.eta()) > fTruePhotonEtaMax) {
       fillTruePhotonSelection("kOutsideMCEtaAcc");
       fillRejectionHistos(kOutsideMCEtaAcc);

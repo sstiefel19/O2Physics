@@ -56,7 +56,7 @@ struct skimmerGammaConversions {
   void init(InitContext const&)
   {
     //~ HistPtr lHistPtr = fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}});
-    fMotherSizesHisto = std::get<std::shared_ptr<TH1>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}}));
+    fMotherSizesHisto = std::get<std::shared_ptr<TH1>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{28, -14.f, 14.f}}}));
     //~ fMotherSizesHisto = std::get<std::shared_ptr<TH1F*>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{14, 0.f, 14.f}}}));
   }
 
@@ -158,125 +158,7 @@ LOGF(info, "collision");
                           TTRACK const& theTrackPos,
                           TTRACK const& theTrackNeg)
   {
-    bool result = false;
-    // todo: verify it is enough to check only mother0 being equal
-
-
-    // urgent todo: understand why is it safly working like this? does it mean all the V0s have both tracks with MC information? no fake tracks? Reason for bad
-    /*auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles>();
-    auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles>();
-    example from https://aliceo2group.github.io/analysis-framework/docs/tutorials/indexTables.html?highlight=_as:
-    track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0*/
-
-    //~ if (!(theTrackPos.has_mcParticle() && theTrackNeg.has_mcParticle())){
-      //~ LOGF(info, "SFS one V0 daughter track is a track without mc particle. Can't be a confirmable v0.");
-      //~ fRegistry.fill(HIST("hPeculiarOccurences"), 0.5);
-      //~ return false;
-    //~ }
-    //~ auto lMcPos = theTrackPos.mcParticle();
-    //~ auto lMcNeg = theTrackNeg.mcParticle();
-
-    //~ for (auto& mP : lMcPos.template mothers_as<aod::McParticles>()) {
-      //~ LOGF(info, "   mother index mP: %d", mP.globalIndex());
-      //~ lMothersGlobalIndices.push_back(mP.globalIndex());
-    //~ }
-    //~ for (auto& mN : lMcNeg.template mothers_as<aod::McParticles>()) {
-      //~ LOGF(info, "   mother index mN: %d", mN.globalIndex());
-      //~ lMothersGlobalIndices.push_back(mN.globalIndex());
-    //~ }
-
-    //~ switch(lMothersGlobalIndices.size()){
-      //~ case 0 : return false; // none of the tracks come from a mc photon
-      //~ case 1 : {
-                  //~ //one of the tracks has a mc mother, the other doesn't. Strange but not impossible I guess
-                  //~ LOGF(info, "SFS only one track has a mother.");
-
-               //~ }
-
-    //~ }
-
-    /*
-    if (!lMothersGlobalIndices.size()){
-      // none of the tracks come from a mc photon
-      return false;
-    }
-*/
-/*
-    // SFS verify theyre all the same category and remove
-    int lMotherSameNess = 0;
-    {
-      if (lMothersGlobalIndices.size() == 2) {
-        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[1]) {
-          LOGF(info, "size2: 01");
-          lMotherSameNess = 1;
-        }
-      }
-
-      if (lMothersGlobalIndices.size() == 3) {
-        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[1]) {
-          LOGF(info, "size3: 01");
-          lMotherSameNess = 2;
-        }
-        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[2]) {
-          LOGF(info, "size2: 02");
-          lMotherSameNess = 3;
-        }
-        if (lMothersGlobalIndices[1] == lMothersGlobalIndices[2]) {
-          LOGF(info, "size2: 12");
-          lMotherSameNess = 4;
-        }
-      }
-
-      if (lMothersGlobalIndices.size() == 4) {
-        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[2]) {
-          LOGF(info, "size4 02");
-          lMotherSameNess = 4;
-        }
-        if (lMothersGlobalIndices[1] == lMothersGlobalIndices[3]) {
-          LOGF(info, "size4 13");
-          lMotherSameNess = 5;
-        }
-        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[3]) {
-          LOGF(info, "size4 03");
-          lMotherSameNess = 6;
-        }
-        if (lMothersGlobalIndices[1] == lMothersGlobalIndices[2]) {
-          LOGF(info, "size4 12");
-          lMotherSameNess = 7;
-        }
-        if (lMothersGlobalIndices[0] == lMothersGlobalIndices[1]) {
-          LOGF(info, "size4 01");
-          lMotherSameNess = 8;
-        }
-        if (lMothersGlobalIndices[2] == lMothersGlobalIndices[3]) {
-          LOGF(info, "size4 23");
-          lMotherSameNess = 9;
-        }
-      }
-    }
-
-*/
-
-
-    //~ auto checkOneTrack = [&](auto const& theRecTrack){
-      //~ std::vector<int> lMothersIndeces{};
-      //~ if (!theRecTrack.has_mcParticle()){
-        //~ LOGF(info,
-             //~ "SFS V0 daughter track %d is a track without mc particle. Can't be a confirmable v0.",
-             //~ theRecTrack.globalIndex());
-        //~ fMotherSizesHisto->Fill(-0.5);
-        //~ return lMothersIndeces;
-      //~ }
-      //~ auto const& lMcParticle = theRecTrack.mcParticle();
-      //~ for (auto& lMother : lMcParticle.template mothers_as<aod::McParticles>()) {
-        //~ LOGF(info, "   mother index lMother: %d", lMother.globalIndex());
-        //~ lMothersIndeces.push_back(lMother.globalIndex());
-      //~ }
-      //~ fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
-      //~ return std::move(lMothersIndeces);
-    //~ };
-
-    auto assessTrack = [&](auto const& theRecTrack){
+    auto trackHasMcParticle = [&](auto const& theRecTrack){
       if (!theRecTrack.has_mcParticle()){
         LOGF(info,
              "SFS V0 daughter track %d is a track without mc particle. Can't be a confirmable v0.",
@@ -296,69 +178,78 @@ LOGF(info, "collision");
       fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
       return std::move(lMothersIndeces);
     };
+    // ================== end lambda definitions =========================
 
-    if (!(assessTrack(theTrackPos) && assessTrack(theTrackNeg)){
+    // one of the tracks doesnt have a mcParticle, has been accounted for in fMotherSizesHisto
+    if (!(trackHasMcParticle(theTrackPos) && trackHasMcParticle(theTrackNeg))){
       return false;
     }
+
+    // get mcParticles
     auto lMcPos = theTrackPos.mcParticle();
     auto lMcNeg = theTrackNeg.mcParticle();
 
-    std::vector<int> lMothersIdxPos = getMotherIndeces(lMcPos);
-    std::vector<int> lMothersIdxNeg = getMotherIndeces(lMcNeg);
+    // get indeces of mcMother of tracks
+    std::vector<int> lMothersIndecesPos = getMotherIndeces(lMcPos);
+    std::vector<int> lMothersIndecesNeg = getMotherIndeces(lMcNeg);
 
-    if (!(lMothersIdxPos.size() || lMothersIdxNeg.size())){
-      // none of tracks has a mother
+    // none of tracks has a mother, has been accounted for in fMotherSizesHisto
+    if (!(lMothersIndecesPos.size() || lMothersIndecesNeg.size())){
       return false;
     }
 
-    //~ auto const& lDaughterWithAMother = lMothersIdxPos.size() ? lMcPos : lMcNeg;
-    if ((lMothersIdxPos.size() + lMothersIdxNeg.size()) == 1){
-      // exactly one has a mother
-      fRegistry.fill(HIST("hPeculiarOccurences"), -0.5);
-
+    // exactly one has a mother
+    if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 1){
+      fMotherSizesHisto->Fill(-1.5);
       return false;
     }
 
+    // we know now both tracks have at least one mother
+    // check if it is the same
+    if (lMothersIndecesPos[0] != lMothersIndecesNeg[0]){
+      fMotherSizesHisto->Fill(-2.5);
+      return false;
+    }
 
-    if (lMothersIdxPos)
+    // both tracks have the first mother
+    // SFS todo: actually no loop required here, for this
+    bool lResult = false;
+    for (auto& lMcMother : lMcNeg.template mothers_as<aod::McParticles>()) {
 
-    // if both tracks have exactly one and the same mother
-    if (lMotherSameNess == 1) {
-      // SFS todo: actually no loop required here, for this
-      for (auto& lMcMother : lMcNeg.template mothers_as<aod::McParticles>()) {
+      // case we have a confirmed photon conversion and have the mother mc particle
+      // todo: store if it was not a photon but another mother particle
+      if ((lResult = lMcMother.pdgCode() == 22)) {
 
-        // case we have a confirmed photon conversion and have the mother mc particle
-        if ((result = lMcMother.pdgCode() == 22)) {
-
-          // get mc daughter in order to compute true conversion point
-          auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
-          if (lDaughters.begin() == lDaughters.end()) {
-            // mc converted mother has no mc daughters, should never happen
-            fRegistry.fill(HIST("hPeculiarOccurences"), -1.5);
-            return false;
-          }
-          auto lDaughter0 = lDaughters.begin();
-          float lDaughter0Vx = lDaughter0.vx();
-          float lDaughter0Vy = lDaughter0.vy();
-          float lDaughter0Vz = lDaughter0.vz();
-          float lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
-
-          fFuncTableMcGammasFromConfirmedV0s(
-            lMcMother.mcCollisionId(),
-            lMcMother.globalIndex(),
-            theV0.v0Id(),
-            lMcMother.statusCode(),
-            lMcMother.flags(),
-            lMcMother.px(), lMcMother.py(), lMcMother.pz(),
-            lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(),
-            lDaughters.size(),
-            lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
-            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
-            lV0Radius);
+        // get mc daughter in order to compute true conversion point
+        auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
+        if (lDaughters.begin() == lDaughters.end()) {
+          // mc converted mother has no mc daughters, should never happen
+          fMotherSizesHisto->Fill(-3.5);
+          return false;
         }
+        auto lDaughter0 = lDaughters.begin();
+        float lDaughter0Vx = lDaughter0.vx();
+        float lDaughter0Vy = lDaughter0.vy();
+        float lDaughter0Vz = lDaughter0.vz();
+        float lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+
+        fFuncTableMcGammasFromConfirmedV0s(
+          lMcMother.mcCollisionId(),
+          lMcMother.globalIndex(),
+          theV0.v0Id(),
+          lMcMother.statusCode(),
+          lMcMother.flags(),
+          lMcMother.px(), lMcMother.py(), lMcMother.pz(),
+          lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(),
+          lDaughters.size(),
+          lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
+          lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
+          lV0Radius);
       }
-    }*/
-    return result;
+      break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
+    }
+
+    return lResult;
   }
 };
 

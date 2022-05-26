@@ -108,6 +108,7 @@ struct GammaConversions {
     {"hIsPhotonSelected", "hIsPhotonSelected;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}},
     {"hTruePhotonSelection", "hTruePhotonSelection;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
 
+  // todo: change this into map<enum,string> as I did in skimmerGammaConversions
   std::map<std::string, size_t> fPhotonCutIndeces{
     {"kV0In", 0},
     {"kTrackEta", 1},

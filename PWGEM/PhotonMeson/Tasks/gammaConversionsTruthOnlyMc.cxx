@@ -41,6 +41,10 @@ struct gammaConversionsTruthOnlyMc {
       {"hGammaProdAfterCutsP_MCTrue", "hGammaProdAfterCutsP_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaProdAfterCutsPt_MCTrue", "hGammaProdAfterCutsPt_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
 
+      {"hGammaProdR_MCTrue", "hGammaProdR_MCTrue;vertex radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
+      {"hGammaProdRZ_MCTrue", "hGammaProdRZ_MCTrue;vertex radius (cm);vertex z (cm)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
+
+
       {"hGammaConvertedP_Rsel_MCTrue", "hGammaConvertedP_Rsel_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaConvertedPt_Rsel_MCTrue", "hGammaConvertedPt_Rsel_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
       {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue;conversion radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
@@ -141,6 +145,12 @@ struct gammaConversionsTruthOnlyMc {
 
       registry.fill(HIST("hGammaProdAfterCutsP_MCTrue"), lMcGamma.p());
       registry.fill(HIST("hGammaProdAfterCutsPt_MCTrue"), lMcGamma.pt());
+
+      float lProdR = sqrt(pow(lMcGamma.vx(), 2) + pow(lMcGamma.vy(), 2));
+      registry.fill(HIST("hGammaProdR_MCTrue"), lProdR);
+      registry.fill(HIST("hGammaProdRZ_MCTrue"), lProdR, lMcGamma.vz());
+
+
 
       int const lNDaughters = lMcGamma.nDaughters();
       registry.fill(HIST("hNDaughters_MCTrue"), 0.5 + lNDaughters);

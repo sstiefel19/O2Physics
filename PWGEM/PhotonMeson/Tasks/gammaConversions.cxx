@@ -400,9 +400,7 @@ struct GammaConversions {
       auto lTwoV0Daughters = theAllTracks.sliceBy(aod::v0data::v0Id, lV0.v0Id());
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
 
-      if (!processV0(lV0, lV0CosinePA, lTwoV0Daughters)) {
-        continue;
-      }
+      processV0(lV0, lV0CosinePA, lTwoV0Daughters);
     }
   }
   PROCESS_SWITCH(GammaConversions, processRec, "process reconstructed info", true);

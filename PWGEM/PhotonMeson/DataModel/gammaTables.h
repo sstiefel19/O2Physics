@@ -47,7 +47,7 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
 
 namespace gammamctrue
 {
-DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);       //! Used as reference for the daughters
+//~ DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);       //! Used as reference for the daughters
 DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); //! Number of daughters
 DECLARE_SOA_COLUMN(Eta, eta, float);             //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);             //! Angle phi in rad
@@ -64,7 +64,7 @@ DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);       //! 2d radius of conversion
 DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId,
-                  gammamctrue::Gamma,
+                  //~ gammamctrue::Gamma,
                   v0data::V0Id, // reference to reconstructed v0 (if its a task with reconstucted info)
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz,
@@ -85,6 +85,10 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
 namespace gammadaughtermctrue
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Mother0, mother0, int64_t, McGammasTrue, ""); //! index of first mother
+
+//~ DECLARE_SOA_INDEX_COLUMN(McGammasTrue, mcGammasTrue);                                       //!
+
+
 DECLARE_SOA_COLUMN(NMothers, nMothers, int);                                //! the number of mothers
 } // namespace gammadaughtermctrue
 
@@ -93,6 +97,7 @@ DECLARE_SOA_TABLE(McGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId, // SFS maybe drop since there is already a pointer to MCGammas which point to mccollision. But maybe still good to have for correct automatic grouping - not sure about that
                   gammadaughtermctrue::Mother0Id,
+                  //~ gammadaughtermctrue::McGammasTrueId,
                   gammadaughtermctrue::NMothers,
 
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,

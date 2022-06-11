@@ -77,7 +77,7 @@ struct skimmerGammaConversions {
       LOGF(fatal, "Cannot enable doprocessRec and doprocessMc at the same time. Please choose one.");
     }
 
-    fMotherSizesHisto = std::get<std::shared_ptr<TH1>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{10, 0.f, 10.f}}}));
+    fMotherSizesHisto = std::get<std::shared_ptr<TH1>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1I, {{10, 0.f, 10.f}}}));
 
     // set axis lables
     TAxis* lXaxis = fRegistry.get<TH1>(HIST("hV0Confirmation"))->GetXaxis();

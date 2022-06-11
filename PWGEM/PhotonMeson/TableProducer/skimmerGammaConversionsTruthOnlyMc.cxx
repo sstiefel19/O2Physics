@@ -79,26 +79,10 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lDaughter0Vy = lDaughter0.vy();
           lDaughter0Vz = lDaughter0.vz();
           lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
-
-          for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-
-            // SFS this can be removed once the eta integrity is checked
-            TVector3 lDaughterVtx(lDaughter.vx(), lDaughter.vy(), lDaughter.vz());
-            if (lMcParticle.isPhysicalPrimary()) {
-              float_t lEtaDiff = lDaughterVtx.Eta() - lMcParticle.eta();
-              registry.fill(HIST("hEtaDiff"), lEtaDiff);
-            }
-            fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
-                                       lMcParticle.globalIndex(),
-                                       lDaughter.mothersIds().size(),
-                                       lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(),
-                                       lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
-                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
-          }
         }
         fFuncTableMcGammas(
           lMcParticle.mcCollisionId(),
-          lMcParticle.globalIndex(),
+          //~ lMcParticle.globalIndex(),
           -1, // V0Id when running in reconstructed task
           lMcParticle.pdgCode(), lMcParticle.statusCode(), lMcParticle.flags(),
           lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(),
@@ -107,6 +91,20 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lMcParticle.eta(), lMcParticle.phi(), lMcParticle.p(), lMcParticle.pt(), lMcParticle.y(),
           lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
           lV0Radius);
+
+        if (lMcParticle.has_daughters()) {
+
+          for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
+
+            fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
+                                       fFuncTableMcGammas.lastIndex(),
+                                       lDaughter.mothersIds().size(),
+                                       lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(),
+                                       lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
+                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
+          }
+        }
+
       }
     }
   }

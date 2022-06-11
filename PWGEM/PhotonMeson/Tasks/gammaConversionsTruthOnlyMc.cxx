@@ -46,6 +46,9 @@ struct gammaConversionsTruthOnlyMc {
       {"hGammaConvertedPt_Rsel_MCTrue", "hGammaConvertedPt_Rsel_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
       {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue;conversion radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
 
+      {"hGammaConvertedR_MCTrue2", "hGammaConvertedR_MCTrue2;conversion radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
+
+
       {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue;#eta;p (GeV/c)", {HistType::kTH2F, {gAxis_eta2d, gAxis_pT2d}}},
       {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue;#eta;conversion radius (cm)", {HistType::kTH2F, {gAxis_eta2d, gAxis_r2d}}},
       {"hGammaConvertedEtaZ_MCTrue", "hGammaConvertedEtaZ_MCTrue;#eta;conversion z (cm)", {HistType::kTH2F, {gAxis_eta2d, gAxis_z2d}}},
@@ -56,10 +59,10 @@ struct gammaConversionsTruthOnlyMc {
       {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {gAxis_z2d, gAxis_pT2d}}},
 
       // debugging histograms
-      {"hPeculiarOccurences_MCTrue", "hPeculiarOccurences_MCTrue", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
-      {"hNElectrons_MCTrue", "hNElectrons_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hNDaughters_MCTrue", "hNDaughters_MCTrue;nDaughters;counts", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hPdgCodeDaughters_MCTrue", "hPdgCodeDaughters_MCTrue;pdg code;counts", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
+      {"hPeculiarOccurences_MCTrue", "hPeculiarOccurences_MCTrue", {HistType::kTH1I, {{50, -25.f, 25.f}}}},
+      {"hNElectrons_MCTrue", "hNElectrons_MCTrue", {HistType::kTH1I, {{50, 0.f, 50.f}}}},
+      {"hNDaughters_MCTrue", "hNDaughters_MCTrue;nDaughters;counts", {HistType::kTH1I, {{50, 0.f, 50.f}}}},
+      {"hPdgCodeDaughters_MCTrue", "hPdgCodeDaughters_MCTrue;pdg code;counts", {HistType::kTH1I, {{200, -1000.f, 1000.f}}}},
     },
   };
 
@@ -82,6 +85,8 @@ struct gammaConversionsTruthOnlyMc {
     TVector3 lDaughter0Vtx(lDaughter0.vx(),lDaughter0.vy(), lDaughter0.vz());
     float_t lEtaDiff = lDaughter0Vtx.Eta() - lMcGamma.eta();
     registry.fill(HIST("hEtaDiff"), lEtaDiff);*/
+
+
 
     float lConversionRadius = theMcConvGamma.v0Radius();
     // 1d histos
@@ -148,6 +153,24 @@ struct gammaConversionsTruthOnlyMc {
       if (lNDaughters == 2) {
 
         fillConversionHistograms(lMcGamma);
+
+        LOGF(info, "SFS gamma %d with nDaughters %d", lMcGamma.globalIndex(), lMcGamma.nDaughters());
+        // test: get daughter tracks
+        auto lTwoDaughtersTable = theMcGammaDaughters.sliceBy(aod::gammadaughtermctrue::mother0Id, lMcGamma.globalIndex());
+
+        LOGF(info, "SFS size %d", lTwoDaughtersTable.size());
+
+        if (lTwoDaughtersTable.size()){
+
+          auto lDaughter0 = lTwoDaughtersTable.begin();
+          float lDaughter0Vx = lDaughter0.vx();
+          float lDaughter0Vy = lDaughter0.vy();
+
+          float lConversionRadius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+          registry.fill(HIST("hGammaConvertedR_MCTrue2"), lConversionRadius);
+        }
+
+
       }
     }
   }

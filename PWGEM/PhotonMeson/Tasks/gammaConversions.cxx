@@ -83,6 +83,10 @@ struct GammaConversions {
     {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, gAxis_pT}}},
     {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
     {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
+
+    {"hConvPointRPt", "hConvPointRPt;conversion radius (cm);p_T (GeV/c)", {HistType::kTH2F, {gAxis_r2d, gAxis_pT2d}}},
+
+
   };
 
   // only in mc
@@ -501,6 +505,7 @@ struct GammaConversions {
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
+    fillTH2(theContainer, "hConvPointRPt", theV0.v0radius(), theV0.pt());
   }
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
@@ -511,6 +516,7 @@ struct GammaConversions {
     fillTH1(theContainer, "hPhi", theMcGamma.phi());
     fillTH1(theContainer, "hPt", theMcGamma.pt());
     fillTH1(theContainer, "hConvPointR", theMcGamma.v0Radius());
+    fillTH2(theContainer, "hConvPointRPt", theMcGamma.v0Radius(), theMcGamma.pt());
   }
 
   template <typename T>
